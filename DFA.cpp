@@ -20,6 +20,11 @@ void DFA::addTransition(Transition t) {
     transitions[t.from][t.sym_to_int()] = t.to;
 }
 
+void DFA::overwriteTransition(Transition t) {
+    assertInBounds(t);
+    transitions[t.from][t.sym_to_int()] = t.to;
+}
+
 void DFA::removeTransition(Transition t) {
     assertInBounds(t);
     if(transitions[t.from][t.sym_to_int()] == NONE) throw std::invalid_argument("Transition not found");
@@ -57,65 +62,51 @@ void DFA::resize(int size) {
     }
 }
 
-/// \param states Vector of states
-/// \return true if they all have the same transitions
-bool DFA::check_identical(std::vector<int> states) {
-    if(states.empty()) return true;
-    for(int sym = 0;sym<ALPHABET.len;sym++) {
-        int val = transitions[states[0]][sym];
-        if(std::any_of(states.begin(), states.end(), [this, val, sym](int s){
-            return val == transitions[s][sym];
-        })) return false;
+struct pair_hash {
+    template<class T1, class T2>
+    std::size_t operator()(const std::pair<T1, T2> &p) const {
+        return std::hash<T1>()(p.first) ^ std::hash<T2>()(p.second);
     }
-    return true;
-}
+};
 
-
-/// \param part Partitions to compact ids of
-/// \return Number of partitions found
-int compact_ids(std::vector<int> &part) {
-    std::unordered_map<int, int> to_compacted;
-    int id = -1;
-    for(int x : part) {
-        if(to_compacted.find(x) == to_compacted.end()) {
-            id++;
-            to_compacted[x] = id;
-        }
+int first_exit(int state, const std::vector<std::array<int, ALPHABET.len>> &transitions, const std::vector<int> &current_part) {
+    for(int x = 0;x<ALPHABET.len;x++) {
+        if(current_part[transitions[state][x]] != current_part[state]) return current_part[transitions[state][x]];
     }
-    return id + 1;
+    return current_part[state];
 }
 
 DFA DFA::minimize() {
-    std::vector<int> part(final_states.begin(), final_states.end());
-    std::unordered_map<int, int> leaves_into; //TODO this should be a pair of where it leaves from and where it leaves into
-    {
-        int last_id = 1;
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            for (int x = 0; x < final_states.size(); x++) {
-                bool leaves = false;
-                for (int sym = 0; sym < ALPHABET.len; sym++) {
-                    if (part[transitions[x][sym]] != part[x]) {
-                        leaves = true;
-                        break;
-                    }
-                }
-                if (leaves) {
-                    if (leaves_into.find(part[x]) == leaves_into.end()) {
-                        last_id++;
-                        leaves_into[part[x]] = last_id;
-                    }
-                    part[x] = leaves_into[part[x]];
-                    changed = true;
-                }
+    std::vector<int> current_part(transitions.size()), next_part(transitions.size());
+    for(int x = 0;x<current_part.size();x++)
+        current_part[x] = final_states[x] ? 1 : 0;
+    while(true) {
+        std::unordered_map<std::pair<int, int>, int, pair_hash> assignment;
+        std::unordered_map<int, int> directions;
+        int nextid = 0;
+        for(int x = 0;x<current_part.size();x++) {
+            int leaves_into = first_exit(x, transitions, current_part);
+            std::pair<int, int> dir{current_part[x], leaves_into};
+            if(assignment.contains(dir))
+                next_part[x] = assignment[dir];
+            else {
+                directions[dir.first]++;
+                assignment[dir] = nextid++;
+                next_part[x] = assignment[dir];
             }
         }
+        bool split = std::any_of(directions.begin(), directions.end(), [](const auto &p) { return p.second > 1; });
+        std::swap(current_part, next_part);
+        if(!split) break;
     }
-    int part_nr = compact_ids(part);
-    std::vector<bool> added(part_nr, false);
     DFA result;
-    result.resize(part_nr);
-
-    throw "TODO";
+    result.resize(*std::max_element(current_part.begin(), current_part.end()) + 1);
+    //TODO need to treeshake dead & unreachable states
+    for(int x = 0;x<current_part.size();x++) {
+        for(int sym = 0;sym<ALPHABET.len;sym++) {
+            result.overwriteTransition({current_part[x], int_to_sym(sym), current_part[transitions[x][sym]]});
+        }
+        if(final_states[x]) result.setFinalState(current_part[x], true);
+    }
+    return result;
 }

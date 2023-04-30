@@ -40,6 +40,7 @@ protected:
 public:
     void setStartState(int state);
     void setFinalState(int state, bool is_final);
+    int getSize() const;
     virtual void resize(int size) = 0;
     virtual bool tryAccept(const std::string &s) = 0;
     virtual void addTransition(Transition t) = 0;

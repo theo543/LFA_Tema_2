@@ -26,3 +26,8 @@ void FA::setStartState(int state) {
     assertInBounds(state);
     start_state = state;
 }
+
+
+int FA::getSize() const {
+    return final_states.size();
+}

@@ -3,6 +3,7 @@
 #include "DFA.h"
 #include "NFA.h"
 int main() {
+    //TODO: more complex tests
     NFA nfa;
     std::string match;
     std::cout << "Match str containing: ";
@@ -16,8 +17,13 @@ int main() {
     for(int x = 0;x<msize;x++)
         nfa.addTransition({x, match[x], x + 1});
     nfa.setFinalState(msize, true);
+    std::cout << "NFA created with " << nfa.getSize() << " states" << std::endl;
+    DFA unminimized = nfa.determinize();
+    std::cout << "DFA created with " << unminimized.getSize() << " states" << std::endl;
+    DFA dfa = unminimized.minimize();
+    std::cout << "Minimized DFA created with " << dfa.getSize() << " states" << std::endl;
+    std::cout<< "Type \"exit\" to exit\n";
     std::string input;
-    DFA dfa = nfa.determinize();//.minimize();
     while(true) {
         std::cout<<"Check str: ";
         std::cin >> input;
