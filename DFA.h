@@ -1,16 +1,19 @@
 #ifndef LFA_TEMA_2_DFA_H
 #define LFA_TEMA_2_DFA_H
 
-#include <unordered_set>
+#include <array>
 #include "FA.h"
 
 class DFA : public FA {
-protected:
-    std::vector<std::unordered_set<char>> symbols;
+    std::vector<std::array<int, ALPHABET.len>> transitions;
+    bool check_identical(std::vector<int> states);
 public:
     DFA();
     bool tryAccept(const std::string &s) override;
+
+    void resize(int size) override;
     void addTransition(Transition t) override;
+    void removeTransition(Transition t) override;
     DFA minimize();
 };
 

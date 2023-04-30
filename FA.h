@@ -3,32 +3,48 @@
 
 #include <vector>
 #include <string>
-#include <unordered_map>
+
+constexpr struct {
+    char start = 'a';
+    char end = 'z';
+    int len = end - start + 1;
+} ALPHABET;
+
+inline int sym_to_int(char symbol) {
+    return symbol - ALPHABET.start;
+}
+
+inline char int_to_sym(int symbol) {
+    return static_cast<char>(symbol) + ALPHABET.start;
+}
 
 struct Transition {
     int from;
-    int to;
     char symbol;
+    int to;
+    [[nodiscard]] int sym_to_int() const {
+        return ::sym_to_int(symbol);
+    }
 };
 
-struct Edge {
-    int to;
-    char symbol;
-};
+
 
 class FA {
 protected:
     int start_state = 0;
-    std::vector<std::unordered_map<char, std::vector<int>>> transitions;
     std::vector<bool> final_states;
-    FA() = default;
+    FA();
+    void assertInBounds(int state) const;
+    void assertInBounds(char symbol) const;
+    void assertInBounds(Transition t) const;
 public:
-    void resize(int size);
     void setStartState(int state);
     void setFinalState(int state, bool is_final);
-    virtual void addTransition(Transition t);
+    virtual void resize(int size) = 0;
     virtual bool tryAccept(const std::string &s) = 0;
-    ~FA() = default;
+    virtual void addTransition(Transition t) = 0;
+    virtual void removeTransition(Transition t) = 0;
+    virtual ~FA() = default;
 };
 
 
