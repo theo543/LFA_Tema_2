@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
+#include <iostream>
 
 constexpr int NONE = -1;
 constexpr auto ALL_NONE = []() -> std::array<int, ALPHABET.len> {
@@ -109,4 +110,24 @@ DFA DFA::minimize() {
         if(final_states[x]) result.setFinalState(current_part[x], true);
     }
     return result;
+}
+
+void DFA::print() {
+    std::cout << "DFA:\n";
+    for(int x = 0;x<transitions.size();x++) {
+        std::cout << x << ": ";
+        for(int sym = 0;sym<ALPHABET.len;sym++) {
+            if(transitions[x][sym] != NONE) {
+                std::cout << int_to_sym(sym) << "->" << transitions[x][sym] << " ";
+            } else {
+                std::cout << int_to_sym(sym) << "->" << "X ";
+            }
+        }
+        std::cout << "\n";
+    }
+    std::cout << "Final states: ";
+    for(int x = 0;x<final_states.size();x++) {
+        if(final_states[x]) std::cout << x << " ";
+    }
+    std::cout << "\n";
 }

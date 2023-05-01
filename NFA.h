@@ -16,6 +16,10 @@ public:
     void addTransition(Transition t) override;
     void removeTransition(Transition t) override;
     DFA determinize();
+    void serialize(std::ostream &out) const;
+    void serialize(const std::string &filename) const;
+    NFA static deserialize(std::istream &in);
+    NFA static deserialize(const std::string &filename);
 };
 
 #endif //LFA_TEMA_2_NFA_H

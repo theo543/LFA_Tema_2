@@ -15,6 +15,7 @@ public:
     void overwriteTransition(Transition t);
     void removeTransition(Transition t) override;
     DFA minimize();
+    void print();
 };
 
 

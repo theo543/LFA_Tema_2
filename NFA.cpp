@@ -4,6 +4,9 @@
 #include <map>
 #include <set>
 #include <queue>
+#include <iostream>
+#include <fstream>
+#include <cassert>
 
 NFA::NFA() : FA() {}
 
@@ -80,4 +83,94 @@ DFA NFA::determinize() {
         dfa.setFinalState(state.second, fin);
     }
     return dfa;
+}
+
+
+// FORMAT:
+// alphabet \n
+// size \n
+// transitions:
+//    for each state:
+//        chars with transitions \n
+//        for each char with transitions:
+//            char number of transitions \n
+//            transitions \n
+// final states \n
+// start state
+
+void NFA::serialize(std::ostream &out) const {
+    out << ALPHABET.start << ' ' << ALPHABET.end << ' ' << ALPHABET.len << '\n';
+    out << transitions.size() << '\n';
+    for(const auto & state : transitions) {
+        std::string chars;
+        for (int sym = 0; sym < ALPHABET.len; sym++) {
+            if (!state[sym].empty()) {
+                chars += int_to_sym(sym);
+            }
+        }
+        out << chars << '\n';
+        for(int sym = 0;sym<ALPHABET.len;sym++) {
+            if(state[sym].empty()) continue;
+            out << int_to_sym(sym) << ' ' << state[sym].size() << ' ';
+            for(int to : state[sym]) {
+                out << to << ' ';
+            }
+            out << '\n';
+        }
+    }
+    for(bool final : final_states) {
+        out << final << ' ';
+    }
+    out << '\n';
+    out << start_state << '\n';
+}
+
+void NFA::serialize(const std::string &filename) const {
+    std::ofstream out(filename);
+    serialize(out);
+}
+
+NFA NFA::deserialize(std::istream &in) {
+    NFA nfa;
+    {
+        char start, end;
+        int len;
+        in >> start >> end >> len;
+        assert(ALPHABET.start == start && ALPHABET.end == end && ALPHABET.len == len);
+    }
+    int size;
+    in >> size;
+    nfa.resize(size);
+    for(int i = 0; i < size; i++) {
+        std::string chars;
+        in >> chars;
+        for(char symchar : chars) {
+            int sym = sym_to_int(symchar);
+            char c;
+            in >> c;
+            assert(c == symchar);
+            int count;
+            in >> count;
+            for(int j = 0; j < count; j++) {
+                int to;
+                in >> to;
+                nfa.addTransition(Transition{i, int_to_sym(sym), to});
+            }
+            assert(count == nfa.transitions[i][sym].size());
+        }
+    }
+    for(int i = 0; i < size; i++) {
+        bool final;
+        in >> final;
+        nfa.setFinalState(i, final);
+    }
+    int start;
+    in >> start;
+    nfa.setStartState(start);
+    return nfa;
+}
+
+NFA NFA::deserialize(const std::string &filename) {
+    std::ifstream in(filename);
+    return deserialize(in);
 }
