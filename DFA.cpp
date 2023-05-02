@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <iostream>
+#include <queue>
 
 constexpr int NONE = -1;
 constexpr auto ALL_NONE = []() -> std::array<int, ALPHABET.len> {
@@ -77,7 +78,51 @@ int first_exit(int state, const std::vector<std::array<int, ALPHABET.len>> &tran
     return current_part[state];
 }
 
+std::vector<bool> markLiveReachable(const std::vector<std::array<int, ALPHABET.len>> &transitions, const std::vector<bool> &finals, int start) {
+    std::vector<bool> reachable(finals.size(), false);
+    std::vector<std::vector<int>> edges_to(finals.size());
+    std::queue<int> bfs;
+    bfs.push(start);
+    while (!bfs.empty()) {
+        int state = bfs.front();
+        bfs.pop();
+        if (reachable[state]) {
+            continue;
+        }
+        reachable[state] = true;
+        for (int x = 0; x < ALPHABET.len; x++) {
+            if (transitions[state][x] != NONE) {
+                bfs.push(transitions[state][x]);
+                edges_to[transitions[state][x]].push_back(state);
+            }
+        }
+    }
+    std::vector<bool> live(finals.size(), false);
+    bfs = {};
+    for (int x = 0; x < finals.size(); x++) {
+        if (finals[x])
+            bfs.push(x);
+    }
+    while (!bfs.empty()) {
+        int state = bfs.front();
+        bfs.pop();
+        if (live[state])
+            continue;
+        live[state] = true;
+        for (int x : edges_to[state]) {
+            bfs.push(x);
+        }
+    }
+    std::vector<bool> marked(finals.size(), false);
+    for (int x = 0; x < finals.size(); x++) {
+        marked[x] = reachable[x] && live[x];
+    }
+    return marked;
+}
+
+
 DFA DFA::minimize() {
+    std::vector<bool> marked = markLiveReachable(transitions, final_states, start_state);
     std::vector<int> current_part(transitions.size()), next_part(transitions.size());
     for(int x = 0;x<current_part.size();x++)
         current_part[x] = final_states[x] ? 1 : 0;
@@ -86,6 +131,7 @@ DFA DFA::minimize() {
         std::unordered_map<int, int> directions;
         int nextid = 0;
         for(int x = 0;x<current_part.size();x++) {
+            if(!marked[x]) continue;
             int leaves_into = first_exit(x, transitions, current_part);
             std::pair<int, int> dir{current_part[x], leaves_into};
             if(assignment.contains(dir))
@@ -102,8 +148,8 @@ DFA DFA::minimize() {
     }
     DFA result;
     result.resize(*std::max_element(current_part.begin(), current_part.end()) + 1);
-    //TODO need to treeshake dead & unreachable states
     for(int x = 0;x<current_part.size();x++) {
+        if(!marked[x]) continue;
         for(int sym = 0;sym<ALPHABET.len;sym++) {
             result.overwriteTransition({current_part[x], int_to_sym(sym), current_part[transitions[x][sym]]});
         }
