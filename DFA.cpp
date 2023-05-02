@@ -151,7 +151,8 @@ DFA DFA::minimize() {
     for(int x = 0;x<current_part.size();x++) {
         if(!marked[x]) continue;
         for(int sym = 0;sym<ALPHABET.len;sym++) {
-            result.overwriteTransition({current_part[x], int_to_sym(sym), current_part[transitions[x][sym]]});
+            if(transitions[x][sym] != NONE)
+                result.overwriteTransition({current_part[x], int_to_sym(sym), current_part[transitions[x][sym]]});
         }
         if(final_states[x]) result.setFinalState(current_part[x], true);
     }
