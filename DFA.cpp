@@ -122,7 +122,7 @@ DFA DFA::treeshake() {
     }
     DFA dfa;
     dfa.resize(newsize);
-    std::vector<int> newids(final_states.size() - newsize, NONE);
+    std::vector<int> newids(final_states.size(), NONE);
     for (int x = 0, skipped = 0; x < final_states.size(); x++) {
         if (kept[x]) {
             newids[x] = x - skipped;
