@@ -73,16 +73,17 @@ struct pair_hash {
 
 int first_exit(int state, const std::vector<std::array<int, ALPHABET.len>> &transitions, const std::vector<int> &current_part) {
     for(int x = 0;x<ALPHABET.len;x++) {
-        if(current_part[transitions[state][x]] != current_part[state]) return current_part[transitions[state][x]];
+        int to = transitions[state][x];
+        if(to != NONE && current_part[to] != current_part[state]) return current_part[to];
     }
     return current_part[state];
 }
 
-std::vector<bool> markLiveReachable(const std::vector<std::array<int, ALPHABET.len>> &transitions, const std::vector<bool> &finals, int start) {
-    std::vector<bool> reachable(finals.size(), false);
-    std::vector<std::vector<int>> edges_to(finals.size());
+DFA DFA::treeshake() {
+    std::vector<bool> reachable(final_states.size(), false);
+    std::vector<std::vector<int>> edges_to(final_states.size());
     std::queue<int> bfs;
-    bfs.push(start);
+    bfs.push(start_state);
     while (!bfs.empty()) {
         int state = bfs.front();
         bfs.pop();
@@ -97,10 +98,10 @@ std::vector<bool> markLiveReachable(const std::vector<std::array<int, ALPHABET.l
             }
         }
     }
-    std::vector<bool> live(finals.size(), false);
+    std::vector<bool> live(final_states.size(), false);
     bfs = {};
-    for (int x = 0; x < finals.size(); x++) {
-        if (finals[x])
+    for (int x = 0; x < final_states.size(); x++) {
+        if (final_states[x])
             bfs.push(x);
     }
     while (!bfs.empty()) {
@@ -113,26 +114,43 @@ std::vector<bool> markLiveReachable(const std::vector<std::array<int, ALPHABET.l
             bfs.push(x);
         }
     }
-    std::vector<bool> marked(finals.size(), false);
-    for (int x = 0; x < finals.size(); x++) {
-        marked[x] = reachable[x] && live[x];
+    std::vector<bool> kept(final_states.size());
+    int newsize = 0;
+    for (int x = 0; x < final_states.size(); x++) {
+        kept[x] = reachable[x] && live[x];
+        newsize += kept[x];
     }
-    return marked;
+    DFA dfa;
+    dfa.resize(newsize);
+    std::vector<int> newids(final_states.size() - newsize, NONE);
+    for (int x = 0, skipped = 0; x < final_states.size(); x++) {
+        if (kept[x]) {
+            newids[x] = x - skipped;
+        } else skipped++;
+    }
+    for(int x = 0;x<final_states.size();x++) {
+        if(!kept[x]) continue;
+        dfa.setFinalState(newids[x], final_states[x]);
+        for(int y = 0;y<ALPHABET.len;y++) {
+            if(transitions[x][y] != NONE && kept[transitions[x][y]]) {
+                dfa.addTransition({newids[x], int_to_sym(y), newids[transitions[x][y]]});
+            }
+        }
+    }
+    return dfa;
 }
 
-
 DFA DFA::minimize() {
-    std::vector<bool> marked = markLiveReachable(transitions, final_states, start_state);
-    std::vector<int> current_part(transitions.size()), next_part(transitions.size());
+    DFA dfa = treeshake();
+    std::vector<int> current_part(dfa.transitions.size()), next_part(dfa.transitions.size());
     for(int x = 0;x<current_part.size();x++)
-        current_part[x] = final_states[x] ? 1 : 0;
+        current_part[x] = dfa.final_states[x] ? 1 : 0;
     while(true) {
         std::unordered_map<std::pair<int, int>, int, pair_hash> assignment;
         std::unordered_map<int, int> directions;
         int nextid = 0;
         for(int x = 0;x<current_part.size();x++) {
-            if(!marked[x]) continue;
-            int leaves_into = first_exit(x, transitions, current_part);
+            int leaves_into = first_exit(x, dfa.transitions, current_part);
             std::pair<int, int> dir{current_part[x], leaves_into};
             if(assignment.contains(dir))
                 next_part[x] = assignment[dir];
@@ -144,17 +162,16 @@ DFA DFA::minimize() {
         }
         bool split = std::any_of(directions.begin(), directions.end(), [](const auto &p) { return p.second > 1; });
         std::swap(current_part, next_part);
-        if(!split) break;
+        if (!split) break;
     }
     DFA result;
     result.resize(*std::max_element(current_part.begin(), current_part.end()) + 1);
     for(int x = 0;x<current_part.size();x++) {
-        if(!marked[x]) continue;
         for(int sym = 0;sym<ALPHABET.len;sym++) {
-            if(transitions[x][sym] != NONE)
-                result.overwriteTransition({current_part[x], int_to_sym(sym), current_part[transitions[x][sym]]});
+            if(dfa.transitions[x][sym] != NONE)
+                result.overwriteTransition({current_part[x], int_to_sym(sym), current_part[dfa.transitions[x][sym]]});
         }
-        if(final_states[x]) result.setFinalState(current_part[x], true);
+        if(dfa.final_states[x]) result.setFinalState(current_part[x], true);
     }
     return result;
 }

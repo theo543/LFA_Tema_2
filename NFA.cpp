@@ -8,6 +8,8 @@
 #include <fstream>
 #include <cassert>
 
+constexpr auto EMPTY_STATE_MARKER = "_";
+
 NFA::NFA() : FA() {}
 
 void NFA::resize(int size) {
@@ -67,9 +69,12 @@ DFA NFA::determinize() {
             }
             superstate to;
             to.insert(to.end(), to_.begin(), to_.end());
-            std::sort(to.begin(), to.end());
+            assert(std::is_sorted(to.begin(), to.end()));
             auto res = state_map.emplace(to, nextid);
             if(res.second) {
+                std::cout<<"Assigned "<<nextid<<" to ";
+                for(int x : to) std::cout<<x<<' ';
+                std::cout<<'\n';
                 nextid++;
                 dfa.resize(nextid);
                 bfs.push(res.first);
@@ -108,6 +113,10 @@ void NFA::serialize(std::ostream &out) const {
                 chars += int_to_sym(sym);
             }
         }
+        if(chars.empty()) {
+            out << EMPTY_STATE_MARKER << '\n';
+            continue;
+        }
         out << chars << '\n';
         for(int sym = 0;sym<ALPHABET.len;sym++) {
             if(state[sym].empty()) continue;
@@ -144,6 +153,11 @@ NFA NFA::deserialize(std::istream &in) {
     for(int i = 0; i < size; i++) {
         std::string chars;
         in >> chars;
+        if(chars == EMPTY_STATE_MARKER) {
+            std::cout<<"State "<<i<<" is empty\n";
+            continue;
+        }
+        std::cout<<"Adding state "<<i<<" with chars "<<chars<<"\n";
         for(char symchar : chars) {
             int sym = sym_to_int(symchar);
             char c;
@@ -163,9 +177,11 @@ NFA NFA::deserialize(std::istream &in) {
         bool final;
         in >> final;
         nfa.setFinalState(i, final);
+        std::cout<<"State "<<i<<" is "<<(final ? "final" : "not final")<<"\n";
     }
     int start;
     in >> start;
+    std::cout<<"Start state is "<<start<<"\n";
     nfa.setStartState(start);
     return nfa;
 }
