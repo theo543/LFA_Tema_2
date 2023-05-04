@@ -1,6 +1,17 @@
 #include <stdexcept>
 #include "FA.h"
 
+static bool dbg_value = false;
+
+bool getDebugOutputEnabled() {
+    return dbg_value;
+}
+
+void setDebugOutputEnabled(bool value) {
+    dbg_value = value;
+}
+
+
 FA::FA() : start_state(0), final_states(1) {}
 
 void FA::assertInBounds(int state) const {

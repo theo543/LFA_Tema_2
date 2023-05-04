@@ -4,6 +4,9 @@
 #include <vector>
 #include <string>
 
+bool getDebugOutputEnabled();
+void setDebugOutputEnabled(bool);
+
 constexpr struct {
     char start = 'a';
     char end = 'z';

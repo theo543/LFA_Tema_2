@@ -72,9 +72,11 @@ DFA NFA::determinize() {
             assert(std::is_sorted(to.begin(), to.end()));
             auto res = state_map.emplace(to, nextid);
             if(res.second) {
-                std::cout<<"Assigned "<<nextid<<" to ";
-                for(int x : to) std::cout<<x<<' ';
-                std::cout<<'\n';
+                if(getDebugOutputEnabled()) {
+                    std::cout << "Assigned " << nextid << " to ";
+                    for (int x: to) std::cout << x << ' ';
+                    std::cout << '\n';
+                }
                 nextid++;
                 dfa.resize(nextid);
                 bfs.push(res.first);
@@ -154,10 +156,10 @@ NFA NFA::deserialize(std::istream &in) {
         std::string chars;
         in >> chars;
         if(chars == EMPTY_STATE_MARKER) {
-            std::cout<<"State "<<i<<" is empty\n";
+            if(getDebugOutputEnabled()) std::cout<<"State "<<i<<" is empty\n";
             continue;
         }
-        std::cout<<"Adding state "<<i<<" with chars "<<chars<<"\n";
+        if(getDebugOutputEnabled()) std::cout<<"Adding state "<<i<<" with chars "<<chars<<"\n";
         for(char symchar : chars) {
             int sym = sym_to_int(symchar);
             char c;
@@ -177,11 +179,11 @@ NFA NFA::deserialize(std::istream &in) {
         bool final;
         in >> final;
         nfa.setFinalState(i, final);
-        std::cout<<"State "<<i<<" is "<<(final ? "final" : "not final")<<"\n";
+        if(getDebugOutputEnabled()) std::cout<<"State "<<i<<" is "<<(final ? "final" : "not final")<<"\n";
     }
     int start;
     in >> start;
-    std::cout<<"Start state is "<<start<<"\n";
+    if(getDebugOutputEnabled()) std::cout<<"Start state is "<<start<<"\n";
     nfa.setStartState(start);
     return nfa;
 }

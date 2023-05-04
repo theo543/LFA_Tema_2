@@ -12,11 +12,11 @@ int main() {
     std::cout << "NFA created with " << nfa.getSize() << " states" << std::endl;
     DFA unminimized = nfa.determinize();
     std::cout << "DFA created with " << unminimized.getSize() << " states" << std::endl;
-    unminimized.print();
+    if(getDebugOutputEnabled()) unminimized.print();
     DFA shaken = unminimized.treeshake(); // just to make sure this works even on its own
     DFA dfa = unminimized.minimize();
     std::cout << "Minimized DFA created with " << dfa.getSize() << " states" << std::endl;
-    dfa.print();
+    if(getDebugOutputEnabled()) dfa.print();
     std::cout<< "Type \"exit\" to exit\n";
     std::string input;
     FA *checks[] = {&nfa, &unminimized, &shaken, &dfa};
