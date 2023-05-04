@@ -18,6 +18,8 @@ int main() {
     std::cout << "Minimized DFA created with " << dfa.getSize() << " states" << std::endl;
     if(getDebugOutputEnabled()) dfa.print();
     std::cout<< "Type \"exit\" to exit\n";
+    std::cout<< "Valid string example from final DFA:" << dfa.get_valid_string() << std::endl;
+    std::cout<< "Valid string from unminimized DFA:" << unminimized.get_valid_string() << std::endl;
     std::string input;
     FA *checks[] = {&nfa, &unminimized, &shaken, &dfa};
     while(true) {
@@ -27,9 +29,16 @@ int main() {
         bool result = checks[0]->tryAccept(input);
         for (FA *check: checks) {
             if (check->tryAccept(input) != result)
-                std::cerr << "Bug found!\n";
+                goto debug_output;
         }
         std::cout << (result ? "Yes" : "No") << std::endl;
+        continue;
+        debug_output:
+        std::cout<<"Bug found!\n";
+        std::cout<< "NFA result: " << (checks[0]->tryAccept(input) ? "Yes" : "No") << std::endl;
+        std::cout<< "Unminimized DFA result: " << (checks[1]->tryAccept(input) ? "Yes" : "No") << std::endl;
+        std::cout<< "Treeshaken DFA result: " << (checks[2]->tryAccept(input) ? "Yes" : "No") << std::endl;
+        std::cout<< "Minimized DFA result: " << (checks[3]->tryAccept(input) ? "Yes" : "No") << std::endl;
     }
     return 0;
 }

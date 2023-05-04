@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <queue>
+#include <random>
 
 constexpr int NONE = -1;
 constexpr auto ALL_NONE = []() -> std::array<int, ALPHABET.len> {
@@ -194,4 +195,35 @@ void DFA::print() {
         if(final_states[x]) std::cout << x << " ";
     }
     std::cout << "\n";
+}
+
+std::string DFA::get_valid_string() {
+    struct node {
+        char sym = 0;
+        int state = 0;
+        int prev = 0;
+    };
+    std::vector<node> bfs;
+    bfs.emplace_back(0, start_state);
+    std::string ret = "No valid string found";
+    std::vector<bool> visited(final_states.size(), false);
+    for(int x = 0;x < bfs.size();x++) {
+        auto elem = bfs[x];
+        if(final_states[elem.state]) {
+            ret = "";
+            while(elem.sym != 0) {
+                ret += elem.sym;
+                elem = bfs[elem.prev];
+            }
+            std::reverse(ret.begin(), ret.end());
+            break;
+        }
+        for(int sym = 0;sym<ALPHABET.len;sym++) {
+            if(transitions[elem.state][sym] != NONE && !visited[transitions[elem.state][sym]]) {
+                bfs.emplace_back(int_to_sym(sym), transitions[elem.state][sym], x);
+                visited[transitions[elem.state][sym]] = true;
+            }
+        }
+    }
+    return ret;
 }

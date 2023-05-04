@@ -17,6 +17,7 @@ public:
     DFA treeshake();
     DFA minimize();
     void print();
+    std::string get_valid_string();
 };
 
 
