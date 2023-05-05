@@ -65,21 +65,6 @@ void DFA::resize(int size) {
     }
 }
 
-struct tuple_hash {
-    template<class T1, class T2, class T3>
-    std::size_t operator()(const std::tuple<T1, T2, T3> &p) const {
-        return std::hash<T1>()(get<0>(p)) ^ std::hash<T2>()(get<1>(p)) ^ std::hash<T3>()(get<2>(p));
-    }
-};
-
-static std::pair<int, int> first_exit(int state, const std::vector<std::array<int, ALPHABET.len>> &transitions, const std::vector<int> &current_part) {
-    for(int x = 0;x<ALPHABET.len;x++) {
-        int to = transitions[state][x];
-        if(to != NONE && current_part[to] != current_part[state]) return {current_part[to], x};
-    }
-    return {current_part[state], -1};
-}
-
 DFA DFA::treeshake() {
     std::vector<bool> reachable(final_states.size(), false);
     std::vector<std::vector<int>> edges_to(final_states.size());
@@ -151,6 +136,18 @@ static void print_partition(const std::vector<int> &partition, int nr) {
     logger() << std::endl;
 }
 
+struct array_hash {
+    template<class T, unsigned long long L>
+    std::size_t operator()(const std::array<T, L> &arr) const {
+        auto hasher = std::hash<T>();
+        std::size_t h = 0;
+        for (auto &x : arr) {
+            h ^= hasher(x) + (h << 2) + 7919;
+        }
+        return h;
+    }
+};
+
 DFA DFA::minimize() {
     DFA dfa = treeshake();
     logger() << "Temporary treeshaken DFA:" << std::endl;
@@ -162,16 +159,18 @@ DFA DFA::minimize() {
     print_partition(current_part, 0);
     int nr = 0;
     while(true) {
-        std::unordered_map<std::tuple<int, int, int>, int, tuple_hash> assignment;
+        std::unordered_map<std::array<int, ALPHABET.len>, int, array_hash> assignment;
         std::unordered_map<int, int> directions;
         int nextid = 0;
         for(int x = 0;x<current_part.size();x++) {
-            std::pair<int, int> leaves_into = first_exit(x, dfa.transitions, current_part);
-            std::tuple<int, int, int> dir{current_part[x], leaves_into.first, leaves_into.second};
+            std::array<int, ALPHABET.len> dir = {};
+            for(int y = 0;y<ALPHABET.len;y++) {
+                dir[y] = current_part[dfa.transitions[x][y]];
+            }
             if(assignment.contains(dir))
                 next_part[x] = assignment[dir];
             else {
-                directions[get<0>(dir)]++;
+                directions[next_part[x]] = 0;
                 assignment[dir] = nextid++;
                 next_part[x] = assignment[dir];
             }
