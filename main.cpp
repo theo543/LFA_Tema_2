@@ -10,6 +10,7 @@ int main() {
         int debug;
         std::cin >> debug;
         setDebugOutputEnabled(debug);
+        std::ios::sync_with_stdio(false);
     }
     std::cout << "Enter path to NFA file: ";
     std::string path;
@@ -29,9 +30,10 @@ int main() {
     std::string input;
     FA *checks[] = {&nfa, &unminimized, &shaken, &dfa};
     while(true) {
-        std::cout << "Check str: ";
+        std::cout << "Input string (_ = lambda): ";
         std::cin >> input;
         if (input == "exit") break;
+        if (input == "_") input = "";
         bool result = checks[0]->tryAccept(input);
         for (FA *check: checks) {
             if (check->tryAccept(input) != result)

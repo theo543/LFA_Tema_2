@@ -122,19 +122,21 @@ DFA DFA::treeshake() {
         newsize += kept[x];
     }
     DFA dfa;
-    dfa.resize(newsize);
-    std::vector<int> newids(final_states.size(), NONE);
-    for (int x = 0, skipped = 0; x < final_states.size(); x++) {
-        if (kept[x]) {
-            newids[x] = x - skipped;
-        } else skipped++;
-    }
-    for(int x = 0;x<final_states.size();x++) {
-        if(!kept[x]) continue;
-        dfa.setFinalState(newids[x], final_states[x]);
-        for(int y = 0;y<ALPHABET.len;y++) {
-            if(transitions[x][y] != NONE && kept[transitions[x][y]]) {
-                dfa.addTransition({newids[x], int_to_sym(y), newids[transitions[x][y]]});
+    if(newsize != 0) {
+        dfa.resize(newsize);
+        std::vector<int> newids(final_states.size(), NONE);
+        for (int x = 0, skipped = 0; x < final_states.size(); x++) {
+            if (kept[x]) {
+                newids[x] = x - skipped;
+            } else skipped++;
+        }
+        for (int x = 0; x < final_states.size(); x++) {
+            if (!kept[x]) continue;
+            dfa.setFinalState(newids[x], final_states[x]);
+            for (int y = 0; y < ALPHABET.len; y++) {
+                if (transitions[x][y] != NONE && kept[transitions[x][y]]) {
+                    dfa.addTransition({newids[x], int_to_sym(y), newids[transitions[x][y]]});
+                }
             }
         }
     }
@@ -226,7 +228,7 @@ std::string DFA::get_valid_string() {
     };
     std::vector<node> bfs;
     bfs.emplace_back(0, start_state);
-    std::string ret = "No valid string found";
+    std::string ret;
     std::vector<bool> visited(final_states.size(), false);
     for(int x = 0;x < bfs.size();x++) {
         auto elem = bfs[x];
@@ -245,6 +247,10 @@ std::string DFA::get_valid_string() {
                 visited[transitions[elem.state][sym]] = true;
             }
         }
+    }
+    if(ret.empty()) {
+        if(final_states[start_state]) ret = " Lambda.";
+        else ret = " Language is empty.";
     }
     return ret;
 }
