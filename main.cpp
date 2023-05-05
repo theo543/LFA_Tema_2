@@ -74,8 +74,11 @@ int main() {
     }
     unminimized.print(logger());
     DFA shaken = unminimized.treeshake(); // just to make sure this works even on its own
+    std::cout << "(Only) Shaken DFA has " << shaken.getSize() << " states" << std::endl;
     DFA minimized = unminimized.minimize();
     std::cout << "Minimized DFA created with " << minimized.getSize() << " states" << std::endl;
+    if(minimized.getSize() == shaken.getSize())
+        std::cout << "Shaken DFA was already minimal (make sure RNG is adding lots of sink transitions to get non-minimal DFA)" << std::endl;
     minimized.print(logger());
     std::cout<< "Type \"exit\" to exit\n";
     std::cout << "Valid string example from final DFA:" << minimized.get_valid_string() << std::endl;
