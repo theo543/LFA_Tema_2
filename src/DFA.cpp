@@ -160,14 +160,15 @@ DFA DFA::minimize() {
     int nr = 0, iterations = 0;
     while(true) {
         iterations++;
-        std::unordered_map<std::array<int, ALPHABET.len>, int, array_hash> assignment;
+        std::unordered_map<std::array<int, ALPHABET.len + 1>, int, array_hash> assignment;
         std::unordered_map<int, int> directions;
         int nextid = 0;
         for(int x = 0;x<current_part.size();x++) {
-            std::array<int, ALPHABET.len> dir = {};
+            std::array<int, ALPHABET.len + 1> dir = {};
             for(int y = 0;y<ALPHABET.len;y++) {
                 dir[y] = current_part[dfa.transitions[x][y]];
             }
+            dir[ALPHABET.len] = current_part[x];
             if(assignment.contains(dir))
                 next_part[x] = assignment[dir];
             else {
