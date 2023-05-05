@@ -167,6 +167,7 @@ DFA DFA::minimize() {
     }
     DFA result;
     result.resize(*std::max_element(current_part.begin(), current_part.end()) + 1);
+    result.setStartState(current_part[dfa.start_state]);
     for(int x = 0;x<current_part.size();x++) {
         for(int sym = 0;sym<ALPHABET.len;sym++) {
             if(dfa.transitions[x][sym] != NONE)
@@ -209,7 +210,7 @@ std::string DFA::get_valid_string() {
     std::vector<bool> visited(final_states.size(), false);
     for(int x = 0;x < bfs.size();x++) {
         auto elem = bfs[x];
-        if(final_states[elem.state]) {
+        if(final_states[elem.state] && x != 0) {
             ret = "";
             while(elem.sym != 0) {
                 ret += elem.sym;

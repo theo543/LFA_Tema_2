@@ -11,7 +11,7 @@ int main() {
     std::cin >> total_transitions;
     NFA nfa;
     nfa.resize(total_states);
-    std::uniform_int_distribution<int> states(0, 99);
+    std::uniform_int_distribution<int> states(0, total_states - 1);
     std::uniform_int_distribution<int> symbols(0, ALPHABET.len - 1);
     for(int i = 0; i < total_transitions; i++) {
         int from = states(rng);
