@@ -4,6 +4,7 @@
 #include <string>
 #include <functional>
 #include <vector>
+#include <filesystem>
 #include "DFA.h"
 #include "NFA.h"
 bool bruteforce_strings(const std::string &prev, int size, int maxsize, const std::function<bool(const std::string &)> &callback) {
@@ -32,9 +33,14 @@ int main() {
     ///TODO add an external library for extra checking (this https://github.com/katef/libfsm looks useful if it has minimization)
     NFA nfa;
     DFA unminimized;
-    std::cout << "Enter path to NFA file: ";
     std::string path;
-    std::cin >> path;
+    while(true) {
+        std::cout << "Enter path to NFA file: ";
+        std::cin >> path;
+        if (!std::filesystem::exists(path)) {
+            std::cout << "File not found." << std::endl;
+        } else break;
+    }
     nfa = NFA::deserialize(path);
     std::cout << "NFA created with " << nfa.getSize() << " states" << std::endl;
     unminimized = nfa.determinize();
