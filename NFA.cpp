@@ -58,6 +58,7 @@ DFA NFA::determinize() {
     std::map<superstate, int> state_map;
     std::queue<std::map<superstate, int>::iterator> bfs;
     bfs.push(state_map.emplace(superstate{start_state}, 0).first);
+    logger() << "Assigned 0 to { " << start_state << " }\n";
     int nextid = 1;
     DFA dfa;
     while(!bfs.empty()) {
@@ -72,11 +73,9 @@ DFA NFA::determinize() {
             assert(std::is_sorted(to.begin(), to.end()));
             auto res = state_map.emplace(to, nextid);
             if(res.second) {
-                if(getDebugOutputEnabled()) {
-                    std::cout << "Assigned " << nextid << " to ";
-                    for (int x: to) std::cout << x << ' ';
-                    std::cout << '\n';
-                }
+                logger() << "Assigned " << nextid << " to { ";
+                for (int x: to) logger() << x << ' ';
+                logger() << "}\n";
                 nextid++;
                 dfa.resize(nextid);
                 bfs.push(res.first);
@@ -156,10 +155,10 @@ NFA NFA::deserialize(std::istream &in) {
         std::string chars;
         in >> chars;
         if(chars == EMPTY_STATE_MARKER) {
-            if(getDebugOutputEnabled()) std::cout<<"State "<<i<<" is empty\n";
+            logger()<<"State "<<i<<" is empty\n";
             continue;
         }
-        if(getDebugOutputEnabled()) std::cout<<"Adding state "<<i<<" with chars "<<chars<<"\n";
+        logger()<<"Adding state "<<i<<" with chars "<<chars<<"\n";
         for(char symchar : chars) {
             int sym = sym_to_int(symchar);
             char c;
@@ -179,11 +178,11 @@ NFA NFA::deserialize(std::istream &in) {
         bool final;
         in >> final;
         nfa.setFinalState(i, final);
-        if(getDebugOutputEnabled()) std::cout<<"State "<<i<<" is "<<(final ? "final" : "not final")<<"\n";
+        logger()<<"State "<<i<<" is "<<(final ? "final" : "not final")<<"\n";
     }
     int start;
     in >> start;
-    if(getDebugOutputEnabled()) std::cout<<"Start state is "<<start<<"\n";
+    logger()<<"Start state is "<<start<<"\n";
     nfa.setStartState(start);
     return nfa;
 }

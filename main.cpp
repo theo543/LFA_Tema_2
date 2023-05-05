@@ -5,6 +5,12 @@
 #include "DFA.h"
 #include "NFA.h"
 int main() {
+    std::cout<<"Enable debug output? (1/0): ";
+    {
+        int debug;
+        std::cin >> debug;
+        setDebugOutputEnabled(debug);
+    }
     std::cout << "Enter path to NFA file: ";
     std::string path;
     std::cin >> path;
@@ -12,11 +18,11 @@ int main() {
     std::cout << "NFA created with " << nfa.getSize() << " states" << std::endl;
     DFA unminimized = nfa.determinize();
     std::cout << "DFA created with " << unminimized.getSize() << " states" << std::endl;
-    if(getDebugOutputEnabled()) unminimized.print();
+    unminimized.print(logger());
     DFA shaken = unminimized.treeshake(); // just to make sure this works even on its own
     DFA dfa = unminimized.minimize();
     std::cout << "Minimized DFA created with " << dfa.getSize() << " states" << std::endl;
-    if(getDebugOutputEnabled()) dfa.print();
+    dfa.print(logger());
     std::cout<< "Type \"exit\" to exit\n";
     std::cout<< "Valid string example from final DFA:" << dfa.get_valid_string() << std::endl;
     std::cout<< "Valid string from unminimized DFA:" << unminimized.get_valid_string() << std::endl;

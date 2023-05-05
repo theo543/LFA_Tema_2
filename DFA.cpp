@@ -141,11 +141,24 @@ DFA DFA::treeshake() {
     return dfa;
 }
 
+static void print_partition(const std::vector<int> &partition, int nr) {
+    logger()<<nr<<"th partition: ";
+    for(int x : partition) {
+        logger() << x << " ";
+    }
+    logger() << std::endl;
+}
+
 DFA DFA::minimize() {
     DFA dfa = treeshake();
+    logger() << "Temporary treeshaken DFA:" << std::endl;
+    dfa.print(logger());
+    logger() << "Minimizing..." << std::endl;
     std::vector<int> current_part(dfa.transitions.size()), next_part(dfa.transitions.size());
     for(int x = 0;x<current_part.size();x++)
         current_part[x] = dfa.final_states[x] ? 1 : 0;
+    print_partition(current_part, 0);
+    int nr = 0;
     while(true) {
         std::unordered_map<std::pair<int, int>, int, pair_hash> assignment;
         std::unordered_map<int, int> directions;
@@ -163,39 +176,46 @@ DFA DFA::minimize() {
         }
         bool split = std::any_of(directions.begin(), directions.end(), [](const auto &p) { return p.second > 1; });
         std::swap(current_part, next_part);
+        print_partition(current_part, ++nr);
         if (!split) break;
     }
     DFA result;
+    logger() << "Writing partitions to DFA..." << std::endl;
     result.resize(*std::max_element(current_part.begin(), current_part.end()) + 1);
     result.setStartState(current_part[dfa.start_state]);
+//    logger() << "Start state: " << current_part[dfa.start_state] << " from state " << dfa.start_state << std::endl;
     for(int x = 0;x<current_part.size();x++) {
         for(int sym = 0;sym<ALPHABET.len;sym++) {
-            if(dfa.transitions[x][sym] != NONE)
+            if(dfa.transitions[x][sym] != NONE) {
                 result.overwriteTransition({current_part[x], int_to_sym(sym), current_part[dfa.transitions[x][sym]]});
+//                logger() << "Transition " << current_part[x] << " " << int_to_sym(sym) << " " << current_part[dfa.transitions[x][sym]] << std::endl;
+//                logger() << "From state " << x << " to state " << dfa.transitions[x][sym] << std::endl;
+            }
         }
         if(dfa.final_states[x]) result.setFinalState(current_part[x], true);
     }
     return result;
 }
 
-void DFA::print() {
-    std::cout << "DFA:\n";
+void DFA::print(std::ostream &out) {
+    out << "DFA:\n";
     for(int x = 0;x<transitions.size();x++) {
-        std::cout << x << ": ";
+        out << x << ": ";
         for(int sym = 0;sym<ALPHABET.len;sym++) {
             if(transitions[x][sym] != NONE) {
-                std::cout << int_to_sym(sym) << "->" << transitions[x][sym] << " ";
+                out << int_to_sym(sym) << "->" << transitions[x][sym] << " ";
             } else {
-                std::cout << int_to_sym(sym) << "->" << "X ";
+                out << int_to_sym(sym) << "->" << "X ";
             }
         }
-        std::cout << "\n";
+        out << "\n";
     }
-    std::cout << "Final states: ";
+    out << "Start state: " << start_state << "\n";
+    out << "Final states: ";
     for(int x = 0;x<final_states.size();x++) {
-        if(final_states[x]) std::cout << x << " ";
+        if(final_states[x]) out << x << " ";
     }
-    std::cout << "\n";
+    out << "\n";
 }
 
 std::string DFA::get_valid_string() {

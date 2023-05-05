@@ -3,9 +3,11 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 bool getDebugOutputEnabled();
 void setDebugOutputEnabled(bool);
+std::ostream &logger();
 
 constexpr struct {
     char start = 'a';
