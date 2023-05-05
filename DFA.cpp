@@ -124,6 +124,7 @@ DFA DFA::treeshake() {
                 }
             }
         }
+        dfa.setStartState(newids[start_state]);
     }
     return dfa;
 }
@@ -186,6 +187,7 @@ DFA DFA::minimize() {
     logger() << "Writing partitions to DFA..." << std::endl;
     result.resize(*std::max_element(current_part.begin(), current_part.end()) + 1);
     result.setStartState(current_part[dfa.start_state]);
+    logger() << "Setting start state to current_part[" << dfa.start_state << "] = " << current_part[dfa.start_state] << std::endl;
 //    logger() << "Start state: " << current_part[dfa.start_state] << " from state " << dfa.start_state << std::endl;
     for(int x = 0;x<current_part.size();x++) {
         for(int sym = 0;sym<ALPHABET.len;sym++) {
