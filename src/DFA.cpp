@@ -158,11 +158,11 @@ DFA DFA::minimize() {
         current_part[x] = dfa.final_states[x] ? 1 : 0;
     print_partition(current_part, 0);
     int nr = 0, iterations = 0;
+    std::unordered_map<std::array<int, ALPHABET.len + 1>, int, array_hash> assignment;
+    int nextid = 0;
     while(true) {
         iterations++;
-        std::unordered_map<std::array<int, ALPHABET.len + 1>, int, array_hash> assignment;
         std::unordered_map<int, int> directions;
-        int nextid = 0;
         for(int x = 0;x<current_part.size();x++) {
             std::array<int, ALPHABET.len + 1> dir = {};
             for(int y = 0;y<ALPHABET.len;y++) {
@@ -199,7 +199,7 @@ DFA DFA::minimize() {
         }
         if(dfa.final_states[x]) result.setFinalState(current_part[x], true);
     }
-    return result;
+    return result.treeshake();
 }
 
 void DFA::print(std::ostream &out) {
