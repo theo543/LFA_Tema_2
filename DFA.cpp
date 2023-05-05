@@ -157,8 +157,9 @@ DFA DFA::minimize() {
     for(int x = 0;x<current_part.size();x++)
         current_part[x] = dfa.final_states[x] ? 1 : 0;
     print_partition(current_part, 0);
-    int nr = 0;
+    int nr = 0, iterations = 0;
     while(true) {
+        iterations++;
         std::unordered_map<std::array<int, ALPHABET.len>, int, array_hash> assignment;
         std::unordered_map<int, int> directions;
         int nextid = 0;
@@ -170,11 +171,12 @@ DFA DFA::minimize() {
             if(assignment.contains(dir))
                 next_part[x] = assignment[dir];
             else {
-                directions[next_part[x]] = 0;
+                directions[current_part[x]]++;
                 assignment[dir] = nextid++;
                 next_part[x] = assignment[dir];
             }
         }
+        std::cout<<"Partition iterations: "<<iterations<<std::endl;
         bool split = std::any_of(directions.begin(), directions.end(), [](const auto &p) { return p.second > 1; });
         std::swap(current_part, next_part);
         print_partition(current_part, ++nr);
