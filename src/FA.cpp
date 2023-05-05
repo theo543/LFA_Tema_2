@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <iostream>
 #include "FA.h"
 
 static bool dbg_value = false;

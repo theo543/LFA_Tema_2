@@ -19,7 +19,7 @@ void NFA::resize(int size) {
         final_states.resize(size);
         transitions.resize(size);
         for(int x = old_size;x<transitions.size();x++) {
-            final_states[x] = false; ///TODO: needed?
+            final_states[x] = false;
         }
     }
 }

@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <string>
-#include <iostream>
+#include <iosfwd>
 
 bool getDebugOutputEnabled();
 void setDebugOutputEnabled(bool);

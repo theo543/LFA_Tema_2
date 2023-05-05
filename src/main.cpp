@@ -15,29 +15,6 @@ bool bruteforce_strings(const std::string &prev, int size, int maxsize, const st
     }
     return false;
 }
-DFA manualtestDFA() {
-    // from here: https://www.geeksforgeeks.org/minimization-of-dfa/
-    DFA manualtest;
-    manualtest.resize(8);
-    manualtest.setStartState(6);
-    manualtest.setFinalState(1, true);
-    manualtest.setFinalState(2, true);
-    manualtest.setFinalState(4, true);
-    constexpr Transition tr[] = {
-            {0, 'a', 3}, {0, 'b', 1},
-            {1, 'a', 2}, {1, 'b', 5},
-            {2, 'a', 2}, {2, 'b', 5},
-            {3, 'a', 0}, {3, 'b', 4},
-            {4, 'a', 2}, {4, 'b', 5},
-            {5, 'a', 5}, {5, 'b', 5},
-            {6, 'x', 7}, {6, 'y', 0},
-            {7, 'x', 7}, {7, 'y', 0},
-    };
-    for(auto &t : tr) {
-        manualtest.addTransition(t);
-    }
-    return manualtest;
-}
 int main() {
     std::cout<<"Enable debug output? (1/0): ";
     {
@@ -54,24 +31,14 @@ int main() {
     ///TODO add an external library for extra checking (this https://github.com/katef/libfsm looks useful if it has minimization)
     NFA nfa;
     DFA unminimized;
-    std::cout<<"Use manual test DFA? (1/0): ";
-    {
-        int manual;
-        std::cin >> manual;
-        if (!manual) {
-            std::cout << "Enter path to NFA file: ";
-            std::string path;
-            std::cin >> path;
-            nfa = NFA::deserialize(path);
-            std::cout << "NFA created with " << nfa.getSize() << " states" << std::endl;
-            unminimized = nfa.determinize();
-            std::cout << "DFA created with " << unminimized.getSize() << " states" << std::endl;
-            checks.emplace_back("Deserialized NFA", &nfa);
-        } else {
-            unminimized = manualtestDFA();
-            std::cout << "Manual test DFA created with " << unminimized.getSize() << " states" << std::endl;
-        }
-    }
+    std::cout << "Enter path to NFA file: ";
+    std::string path;
+    std::cin >> path;
+    nfa = NFA::deserialize(path);
+    std::cout << "NFA created with " << nfa.getSize() << " states" << std::endl;
+    unminimized = nfa.determinize();
+    std::cout << "DFA created with " << unminimized.getSize() << " states" << std::endl;
+    checks.emplace_back("Deserialized NFA", &nfa);
     unminimized.print(logger());
     DFA shaken = unminimized.treeshake(); // just to make sure this works even on its own
     std::cout << "(Only) Shaken DFA has " << shaken.getSize() << " states" << std::endl;
