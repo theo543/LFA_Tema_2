@@ -2,8 +2,18 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <functional>
 #include "DFA.h"
 #include "NFA.h"
+bool bruteforce_strings(const std::string &prev, int size, int maxsize, const std::function<bool(const std::string &)> &callback) {
+    if(size > maxsize) {
+        return callback(prev);
+    }
+    for(char c = ALPHABET.start;c<=ALPHABET.end;c++) {
+        if(bruteforce_strings(prev+c, size+1, maxsize, callback)) return true;
+    }
+    return false;
+}
 int main() {
     std::cout<<"Enable debug output? (1/0): ";
     {
@@ -30,10 +40,40 @@ int main() {
     std::string input;
     FA *checks[] = {&nfa, &unminimized, &shaken, &dfa};
     while(true) {
-        std::cout << "Input string (_ = lambda): ";
+        std::cout << "Input string (_ = lambda) (BF = search for bugs) : ";
         std::cin >> input;
         if (input == "exit") break;
         if (input == "_") input = "";
+        if (input == "BF") {
+            long long bfcounter = 0, yescounter = 0, maxfinds;
+            std::function<bool(const std::string&)> checkequal = [&checks, &bfcounter, &yescounter, &maxfinds](const std::string &s) -> bool {
+                bool result = checks[0]->tryAccept(s);
+                for (FA *check: checks) {
+                    if (check->tryAccept(s) != result) {
+                        std::cout << "Bug found!\n";
+                        std::cout << "Cause string: " << s << "\n";
+                        maxfinds--;
+                        std::cout<<"Searches left: " << maxfinds << "\n";
+                        if(maxfinds <= 0) return true;
+                    }
+                }
+                bfcounter++;
+                if(result) yescounter++;
+                if(bfcounter % 100000 == 0) std::cout << "Checked " << bfcounter << " strings, " << yescounter << " of which were accepted" << std::endl;
+                return false;
+            };
+            std::cout << "Enter max string length: ";
+            int maxsize;
+            std::cin >> maxsize;
+            std::cout << "Cancel after how many finds: ";
+            std::cin >> maxfinds;
+            for(int length = 1; length <= maxsize; length++) {
+                std::cout << "Checking strings of length " << length << std::endl;
+                if (bruteforce_strings("", 0, length, checkequal))
+                    break;
+            }
+            continue;
+        }
         bool result = checks[0]->tryAccept(input);
         for (FA *check: checks) {
             if (check->tryAccept(input) != result)
