@@ -35,8 +35,26 @@ int main() {
     DFA unminimized;
     std::string path;
     while(true) {
-        std::cout << "Enter path to NFA file: ";
-        std::cin >> path;
+        std::cout << "Enter path to NFA file (empty for menu): ";
+        getline(std::cin, path);
+        if(path.empty()) {
+            const std::filesystem::path def_f = std::filesystem::current_path() / "tests";
+            std::vector<std::filesystem::path> files;
+            files.insert(files.end(), std::filesystem::directory_iterator(def_f), std::filesystem::directory_iterator());
+            std::sort(files.begin(), files.end());
+            for(int nr = 1;nr<files.size();nr++) {
+                std::cout << nr << " - " << files[nr].filename() << std::endl;
+            }
+            int choice;
+            while(true) {
+                std::cout << "Enter choice: ";
+                std::cin >> choice;
+                if(choice >= 0 && choice < files.size()) {
+                    path = files[choice].string();
+                    break;
+                } else std::cout << "Invalid choice." << std::endl;
+            }
+        }
         if (!std::filesystem::exists(path)) {
             std::cout << "File not found." << std::endl;
         } else break;
