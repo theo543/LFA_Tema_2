@@ -29,7 +29,6 @@ int main() {
         FA *fa;
     };
     std::vector<check> checks;
-    ///TODO nonminimal_iterations.txt takes a different amount of iterations to minimize every time, why isn't it deterministic?
     ///TODO add an external library for extra checking (this https://github.com/katef/libfsm looks useful if it has minimization)
     NFA nfa;
     DFA unminimized;

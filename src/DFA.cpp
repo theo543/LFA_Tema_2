@@ -5,8 +5,9 @@
 #include <algorithm>
 #include <iostream>
 #include <queue>
+#include <limits>
 
-constexpr int NONE = -1;
+constexpr int NONE = std::numeric_limits<int>::min(); // changed from -1 to min to segfault if it's used as an index
 constexpr auto ALL_NONE = []() -> std::array<int, ALPHABET.len> {
     std::array<int, ALPHABET.len> val{};
     for(int x = 0;x<ALPHABET.len;x++)
@@ -166,7 +167,8 @@ DFA DFA::minimize() {
         for(int x = 0;x<current_part.size();x++) {
             std::array<int, ALPHABET.len + 1> dir = {};
             for(int y = 0;y<ALPHABET.len;y++) {
-                dir[y] = current_part[dfa.transitions[x][y]];
+                int trans = dfa.transitions[x][y];
+                dir[y] = trans == NONE ? NONE : current_part[trans];
             }
             dir[ALPHABET.len] = current_part[x];
             if(assignment.contains(dir))
