@@ -137,7 +137,7 @@ static void print_partition(const std::vector<int> &partition, int nr) {
 }
 
 struct array_hash {
-    template<class T, unsigned long long L>
+    template<class T, auto L>
     std::size_t operator()(const std::array<T, L> &arr) const {
         auto hasher = std::hash<T>();
         std::size_t h = 0;
