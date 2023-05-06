@@ -42,7 +42,7 @@ int main() {
             std::vector<std::filesystem::path> files;
             files.insert(files.end(), std::filesystem::directory_iterator(def_f), std::filesystem::directory_iterator());
             std::sort(files.begin(), files.end());
-            for(int nr = 1;nr<files.size();nr++) {
+            for(int nr = 0;nr<files.size();nr++) {
                 std::cout << nr << " - " << files[nr].filename() << std::endl;
             }
             int choice;
