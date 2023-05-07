@@ -49,3 +49,7 @@ void FA::setStartState(int state) {
 int FA::getSize() const {
     return final_states.size();
 }
+
+int FA::getStartState() const {
+    return start_state;
+}

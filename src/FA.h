@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <iosfwd>
+#include "Acceptor.h"
 
 bool getDebugOutputEnabled();
 void setDebugOutputEnabled(bool);
@@ -34,7 +35,7 @@ struct Transition {
 
 
 
-class FA {
+class FA : public Acceptor {
 protected:
     int start_state = 0;
     std::vector<bool> final_states;
@@ -46,8 +47,8 @@ public:
     void setStartState(int state);
     void setFinalState(int state, bool is_final);
     int getSize() const;
+    int getStartState() const;
     virtual void resize(int size) = 0;
-    virtual bool tryAccept(const std::string &s) = 0;
     virtual void addTransition(Transition t) = 0;
     virtual void removeTransition(Transition t) = 0;
     virtual ~FA() = default;

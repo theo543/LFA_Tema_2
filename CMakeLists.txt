@@ -19,6 +19,7 @@ add_library(
         src/DFA.cpp
         src/NFA.h
         src/NFA.cpp
+        src/Acceptor.h
 )
 add_executable(LFA_Tema_2 src/main.cpp)
 add_executable(Random_Test_Generator src/random_test_generator.cpp)
@@ -39,3 +40,22 @@ add_custom_command(TARGET copy_tests POST_BUILD
         VERBATIM
 )
 add_dependencies(LFA_Tema_2 copy_tests)
+option(libfsm "Check results with libFSM" OFF)
+if(libfsm)
+    message(STATUS "libfsm enabled")
+    include(FetchContent)
+    FetchContent_Declare(
+            libfsm
+            GIT_REPOSITORY https://github.com/theo543/libfsm.git # fork of https://github.com/katef/libfsm
+            GIT_TAG        62dfe789173d66e4f0816985ce0ba865b1ddb9f3 # ported to CMake
+    )
+    FetchContent_MakeAvailable(libfsm)
+    target_compile_definitions(LFA_Tema_2 PRIVATE LIBFSM=1)
+    target_include_directories(LFA_Tema_2 PRIVATE ${libfsm_SOURCE_DIR}/include)
+    target_sources(LFA_Tema_2 PRIVATE src/libfsmWrapper.cpp src/libfsmWrapper.h)
+    target_link_libraries(LFA_Tema_2 PRIVATE libfsm::libfsm)
+else()
+    message(STATUS "libfsm not enabled")
+    target_compile_definitions(LFA_Tema_2 PRIVATE LIBFSM=0)
+endif()
+

@@ -7,6 +7,9 @@
 #include <filesystem>
 #include "DFA.h"
 #include "NFA.h"
+#if LIBFSM
+#include "libfsmWrapper.h"
+#endif
 bool bruteforce_strings(const std::string &prev, int size, int maxsize, const std::function<bool(const std::string &)> &callback) {
     if(size >= maxsize) {
         return callback(prev);
@@ -26,10 +29,9 @@ int main() {
     }
     struct check {
         std::string name;
-        FA *fa;
+        Acceptor *fa;
     };
     std::vector<check> checks;
-    ///TODO add an external library for extra checking (this https://github.com/katef/libfsm looks useful if it has minimization)
     NFA nfa;
     DFA unminimized;
     std::string path;
@@ -71,6 +73,14 @@ int main() {
     if(minimized.getSize() == shaken.getSize())
         std::cout << "Shaken DFA was already minimal (make sure RNG is adding lots of sink transitions to get non-minimal DFA)" << std::endl;
     minimized.print(logger());
+#if LIBFSM
+    libfsmWrapper fsm(nfa);
+    std::cout << "libfsmWrapper created with " << fsm.getSize() << " states" << std::endl;
+    if(fsm.getSize() == minimized.getSize())
+        std::cout << "libfsm agrees that the minimized DFA is minimal" << std::endl;
+    else std::cout << "libfsm disagrees that the minimized DFA is minimal" << std::endl;
+    checks.emplace(checks.begin(), "libfsm (external library)", &fsm);
+#endif //LIBFSM
     std::cout<< "Type \"exit\" to exit\n";
     std::cout << "Valid string example from final DFA:" << minimized.get_valid_string() << std::endl;
     std::cout<< "Valid string from unminimized DFA:" << unminimized.get_valid_string() << std::endl;
@@ -88,7 +98,7 @@ int main() {
             std::function<bool(const std::string&)> checkequal = [&checks, &bfcounter, &yescounter, &maxfinds](const std::string &s) -> bool {
                 bool result = checks[0].fa->tryAccept(s);
                 for (auto &check_pair : checks) {
-                    FA *check = check_pair.fa;
+                    auto *check = check_pair.fa;
                     if (check->tryAccept(s) != result) {
                         std::cout << "Bug found!\n";
                         std::cout << "Cause string: " << s << "\n";
@@ -117,7 +127,7 @@ int main() {
         bool result = checks[0].fa->tryAccept(input);
         bool bugged = false;
         for (auto &check_pair : checks) {
-            FA *check = check_pair.fa;
+            auto *check = check_pair.fa;
             bool thisresult = check->tryAccept(input);
             std::cout << check_pair.name << ": " << (thisresult ? "Yes" : "No") << std::endl;
             bugged |= thisresult != result;

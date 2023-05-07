@@ -53,6 +53,22 @@ void NFA::removeTransition(Transition t) {
     set_.erase(iter);
 }
 
+void NFA::foreachTransition(const std::function<void(Transition)>& f) const {
+    for(int from = 0;from<transitions.size();from++) {
+        for(int sym = 0;sym<ALPHABET.len;sym++) {
+            for(int to : transitions[from][sym]) {
+                f(Transition{from, int_to_sym(sym), to});
+            }
+        }
+    }
+}
+
+void NFA::foreachState(const std::function<void(int, bool)>& f) const {
+    for(int state = 0;state<transitions.size();state++) {
+        f(state, final_states[state]);
+    }
+}
+
 DFA NFA::determinize() {
     typedef std::vector<int> superstate;
     std::map<superstate, int> state_map;
