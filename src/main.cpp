@@ -8,6 +8,7 @@
 #include "DFA.h"
 #include "NFA.h"
 #include "utils.h"
+#include "color.hpp"
 #if LIBFSM
 #include "libfsmWrapper.h"
 #endif
@@ -21,13 +22,13 @@ bool bruteforce_strings(const std::string &prev, int size, int maxsize, const st
     return false;
 }
 int main() {
-    std::cout<<"Enable debug output? (1/0): ";
+    color("blue", "Enable debug output? (1/0): ", true);
     {
         int debug;
         std::cin >> debug;
         setDebugOutputEnabled(debug);
         if(debug) {
-            std::cout<<"Enable verbose debug output? (1/0): ";
+            color("blue", "Enable verbose debug output? (1/0): ", true);
             std::cin >> debug;
             setVerboseOutputEnabled(debug);
         }
@@ -42,7 +43,7 @@ int main() {
     std::string path;
     std::cin.ignore(); // Ignore newline from debug input
     while(true) {
-        std::cout << "Enter path to NFA file (empty for menu): ";
+        color("blue", "Enter path to NFA file (empty for menu): ", true);
         getline(std::cin, path);
         if(path.empty()) {
             const std::filesystem::path def_f = std::filesystem::current_path() / "tests";
@@ -54,40 +55,41 @@ int main() {
             }
             int choice;
             while(true) {
-                std::cout << "Enter choice: ";
+                color("blue", "Enter choice: ", true);
                 std::cin >> choice;
                 if(choice >= 0 && choice < files.size()) {
                     path = files[choice].string();
                     break;
-                } else std::cout << "Invalid choice." << std::endl;
+                } else color("red", "Invalid choice.", true);
             }
         }
         if (!std::filesystem::exists(path) || std::filesystem::is_directory(path)) {
-            std::cout << "File not found." << std::endl;
+            color("red", "File not found.", true);
         } else break;
     }
     nfa = NFA::deserialize(path);
-    std::cout << "NFA created with " << nfa.getSize() << " states" << std::endl;
+    color("blue", "NFA created with " + std::to_string(nfa.getSize()) + " states", true);
     unminimized = nfa.determinize();
-    std::cout << "DFA created with " << unminimized.getSize() << " states" << std::endl;
+    color("blue", "DFA created with " + std::to_string(unminimized.getSize()) + " states", true);
     checks.emplace_back("Deserialized NFA", &nfa);
     std::unique_ptr<DFA> shaken = std::make_unique<DFA>();
     DFA minimized = unminimized.minimize(shaken.get());
-    std::cout << "Minimized DFA created with " << minimized.getSize() << " states" << std::endl;
+    color("blue", "Shaken DFA created with " + std::to_string(shaken->getSize()) + " states", true);
+    color("blue", "Minimized DFA created with " + std::to_string(minimized.getSize()) + " states", true);
     if(minimized.getSize() == shaken->getSize())
-        std::cout << "Shaken DFA was already minimal (make sure RNG is adding lots of sink transitions to get non-minimal DFA)" << std::endl;
+        color("yellow", "Shaken DFA was already minimal (make sure RNG is adding lots of sink transitions to get non-minimal DFA)", true);
     minimized.print(verbose());
 #if LIBFSM
     std::cout << "Creating libfsmWrapper (external library)..." << std::endl;
     libfsmWrapper fsm(nfa);
     if(fsm.getSize() != 0) {
-        std::cout << "libfsmWrapper created with " << fsm.getSize() << " states" << std::endl;
+        color("blue", "libfsmWrapper created with " + std::to_string(fsm.getSize()) + " states", true);
         if (fsm.getSize() == minimized.getSize())
-            std::cout << "libfsm agrees that the minimized DFA is minimal" << std::endl;
-        else std::cout << "libfsm disagrees that the minimized DFA is minimal" << std::endl;
+            color("green", "libfsm agrees that the minimized DFA is minimal", true);
+        else color("red", "libfsm disagrees that the minimized DFA is minimal", true);
         checks.emplace_back("libfsm (external library)", &fsm);
     } else {
-        std::cout << "libfsm's DFA is empty, not using for bug checking because libfsm doesn't like empty languages (causes EIN0VAL)" << std::endl;
+        color("yellow", "libfsm's DFA is empty, not using for bug checking because libfsm doesn't like empty languages (causes EINVAL)", true);
     }
 #endif //LIBFSM
     std::cout<< "Type \"exit\" to exit\n";
@@ -98,7 +100,7 @@ int main() {
     checks.emplace_back("Shaken DFA", shaken.get());
     checks.emplace_back("Minimized DFA", &minimized);
     while(true) {
-        std::cout << "Input string (_ = lambda) (BF = search for bugs) : ";
+        color("blue", "Input string (_ = lambda) (BF = search for bugs) : ", true);
         std::cin >> input;
         if (input == "exit") break;
         if (input == "_") input = "";
@@ -109,7 +111,7 @@ int main() {
                 for (auto &check_pair : checks) {
                     auto *check = check_pair.fa;
                     if (check->tryAccept(s) != result) {
-                        std::cout << "Bug found!\n";
+                        color("red", "Bug found!", true);
                         std::cout << "Cause string: " << s << "\n";
                         maxfinds--;
                         std::cout<<"Searches left: " << maxfinds << "\n";
@@ -121,10 +123,10 @@ int main() {
                 if(bfcounter % 10000000 == 0) std::cout << "Checked " << bfcounter << " strings, " << yescounter << " of which were accepted" << std::endl;
                 return false;
             };
-            std::cout << "Enter max string length: ";
+            color("blue", "Enter max string length: ", true);
             int maxsize;
             std::cin >> maxsize;
-            std::cout << "Cancel after how many finds: ";
+            color("blue", "Cancel after how many finds: ", true);
             std::cin >> maxfinds;
             for(int length = 1; length <= maxsize; length++) {
                 std::cout << "Checking strings of length " << length << std::endl;
@@ -141,7 +143,9 @@ int main() {
             std::cout << check_pair.name << ": " << (thisresult ? "Yes" : "No") << std::endl;
             bugged |= thisresult != result;
         }
-        std::cout << (bugged ? "Bug found!" : "All match!") << std::endl;
+        if(bugged)
+            color("red", "Bug found!", true);
+        else color("green", "All match!", true);
     }
     return 0;
 }

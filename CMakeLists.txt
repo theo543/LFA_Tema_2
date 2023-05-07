@@ -22,7 +22,7 @@ add_library(
         src/Acceptor.h
         src/utils.h src/utils.cpp
 )
-add_executable(LFA_Tema_2 src/main.cpp)
+add_executable(LFA_Tema_2 src/main.cpp src/color.hpp)
 add_executable(Random_Test_Generator src/random_test_generator.cpp)
 target_link_libraries(LFA_Tema_2 PRIVATE FA)
 target_link_libraries(Random_Test_Generator PRIVATE FA)
@@ -43,8 +43,8 @@ add_custom_command(TARGET copy_tests POST_BUILD
 add_dependencies(LFA_Tema_2 copy_tests)
 option(libfsm "Check results with libFSM" OFF)
 if(libfsm)
-    message(STATUS "libfsm enabled")
     include(FetchContent)
+    message(STATUS "libfsm enabled")
     FetchContent_Declare(
             libfsm
             GIT_REPOSITORY https://github.com/theo543/libfsm.git # fork of https://github.com/katef/libfsm
