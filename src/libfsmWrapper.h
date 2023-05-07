@@ -9,8 +9,8 @@ extern "C" struct fsm;
 extern "C" struct fsm_dfavm;
 
 class libfsmWrapper : public Acceptor {
-    fsm *fsm;
-    fsm_dfavm *vm;
+    fsm *fsm_ptr;
+    fsm_dfavm *vm_ptr;
 public:
     bool tryAccept(const std::string &word) override;
     libfsmWrapper(const NFA &nfa);

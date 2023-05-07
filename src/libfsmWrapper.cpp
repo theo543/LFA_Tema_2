@@ -15,38 +15,38 @@ static void throw_if_error(int result, int error) {
 }
 
 bool libfsmWrapper::tryAccept(const std::string &word) {
-    return fsm_vm_match_buffer(vm, word.c_str(), word.size());
+    return fsm_vm_match_buffer(vm_ptr, word.c_str(), word.size());
 }
 
 libfsmWrapper::libfsmWrapper(const NFA &nfa) {
     std::cout << "Creating libfsm DFA from our NFA\n";
-    fsm = fsm_new(nullptr);
-    fsm_addstate_bulk(fsm, nfa.getSize());
-    fsm_setstart(fsm, nfa.getStartState());
+    fsm_ptr = fsm_new(nullptr);
+    fsm_addstate_bulk(fsm_ptr, nfa.getSize());
+    fsm_setstart(fsm_ptr, nfa.getStartState());
     nfa.foreachTransition([this](Transition t) {
-        fsm_addedge_literal(fsm, t.from, t.to, t.symbol);
+        fsm_addedge_literal(fsm_ptr, t.from, t.to, t.symbol);
     });
     nfa.foreachState([this](int state, bool is_final) {
-        fsm_setend(fsm, state, is_final);
+        fsm_setend(fsm_ptr, state, is_final);
     });
-    logger() << "libfsm NFA has " << fsm_countstates(fsm) << " states\n";
-    logger() << "libfsm NFA starts from " << [this](){fsm_state_t t;fsm_getstart(fsm,&t);return t;}() << "\n";
+    logger() << "libfsm NFA has " << fsm_countstates(fsm_ptr) << " states\n";
+    logger() << "libfsm NFA starts from " << [this](){fsm_state_t t;fsm_getstart(fsm_ptr,&t);return t;}() << "\n";
     std::cout << "Determinising libfsm NFA\n";
-    throw_if_error(fsm_determinise(fsm), 0);
-    logger() << "libfsm DFA has " << fsm_countstates(fsm) << " states\n";
+    throw_if_error(fsm_determinise(fsm_ptr), 0);
+    logger() << "libfsm DFA has " << fsm_countstates(fsm_ptr) << " states\n";
     std::cout << "Minimising libfsm DFA\n";
-    throw_if_error(fsm_minimise(fsm), 0);
-    logger() << "Minimized libfsm DFA has " << fsm_countstates(fsm) << " states\n";
+    throw_if_error(fsm_minimise(fsm_ptr), 0);
+    logger() << "Minimized libfsm DFA has " << fsm_countstates(fsm_ptr) << " states\n";
     std::cout << "Compiling libfsm DFA for quick matching\n";
-    vm = fsm_vm_compile(fsm);
+    vm_ptr = fsm_vm_compile(fsm_ptr);
 }
 
 unsigned int libfsmWrapper::getSize() const {
-    return fsm_countstates(fsm);
+    return fsm_countstates(fsm_ptr);
 }
 
 libfsmWrapper::~libfsmWrapper() {
-    fsm_free(fsm);
-    fsm_vm_free(vm);
+    fsm_free(fsm_ptr);
+    fsm_vm_free(vm_ptr);
 }
 #endif //LIBFSM
