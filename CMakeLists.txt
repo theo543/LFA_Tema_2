@@ -20,6 +20,7 @@ add_library(
         src/NFA.h
         src/NFA.cpp
         src/Acceptor.h
+        src/utils.h src/utils.cpp
 )
 add_executable(LFA_Tema_2 src/main.cpp)
 add_executable(Random_Test_Generator src/random_test_generator.cpp)

@@ -1,4 +1,5 @@
 #include "NFA.h"
+#include "utils.h"
 #include <stdexcept>
 #include <algorithm>
 #include <map>
@@ -74,7 +75,7 @@ DFA NFA::determinize() {
     std::map<superstate, int> state_map;
     std::queue<std::map<superstate, int>::iterator> bfs;
     bfs.push(state_map.emplace(superstate{start_state}, 0).first);
-    logger() << "Assigned 0 to { " << start_state << " }\n";
+    verbose() << "Assigned 0 to { " << start_state << " }\n";
     int nextid = 1;
     DFA dfa;
     while(!bfs.empty()) {
@@ -89,9 +90,10 @@ DFA NFA::determinize() {
             assert(std::is_sorted(to.begin(), to.end()));
             auto res = state_map.emplace(to, nextid);
             if(res.second) {
-                logger() << "Assigned " << nextid << " to { ";
-                for (int x: to) logger() << x << ' ';
-                logger() << "}\n";
+                std::string output = "Assigned " + std::to_string(nextid) + " to { ";
+                for (int x: to) output += std::to_string(x) + ' ';
+                output += "}\n";
+                verbose() << output;
                 nextid++;
                 dfa.resize(nextid);
                 bfs.push(res.first);
@@ -171,10 +173,10 @@ NFA NFA::deserialize(std::istream &in) {
         std::string chars;
         in >> chars;
         if(chars == EMPTY_STATE_MARKER) {
-            logger()<<"State "<<i<<" is empty\n";
+            verbose() << "State " + std::to_string(i) + " is empty\n";
             continue;
         }
-        logger()<<"Adding state "<<i<<" with chars "<<chars<<"\n";
+        verbose() << "Adding state " + std::to_string(i) + " with chars " + chars + "\n";
         for(char symchar : chars) {
             int sym = sym_to_int(symchar);
             char c;
@@ -194,7 +196,7 @@ NFA NFA::deserialize(std::istream &in) {
         bool final;
         in >> final;
         nfa.setFinalState(i, final);
-        logger()<<"State "<<i<<" is "<<(final ? "final" : "not final")<<"\n";
+        verbose() << "State " + std::to_string(i) + " is " + (final ? "final" : "not final") + "\n";
     }
     int start;
     in >> start;

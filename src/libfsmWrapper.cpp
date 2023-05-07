@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <iostream>
 #include "libfsmWrapper.h"
+#include "utils.h"
 extern "C" {
 #include <fsm/fsm.h>
 #include <fsm/vm.h>
@@ -28,8 +29,11 @@ libfsmWrapper::libfsmWrapper(const NFA &nfa) {
     nfa.foreachState([this](int state, bool is_final) {
         fsm_setend(fsm, state, is_final);
     });
-    std::cout << "Determinising libfsm DFA\n";
+    logger() << "libfsm NFA has " << fsm_countstates(fsm) << " states\n";
+    logger() << "libfsm NFA starts from " << [this](){fsm_state_t t;fsm_getstart(fsm,&t);return t;}() << "\n";
+    std::cout << "Determinising libfsm NFA\n";
     throw_if_error(fsm_determinise(fsm), 0);
+    logger() << "libfsm DFA has " << fsm_countstates(fsm) << " states\n";
     std::cout << "Minimising libfsm DFA\n";
     throw_if_error(fsm_minimise(fsm), 0);
     logger() << "Minimized libfsm DFA has " << fsm_countstates(fsm) << " states\n";

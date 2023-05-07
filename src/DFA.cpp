@@ -1,4 +1,5 @@
 #include "DFA.h"
+#include "utils.h"
 #include <stdexcept>
 #include <unordered_set>
 #include <unordered_map>
@@ -129,12 +130,17 @@ DFA DFA::treeshake() {
     return dfa;
 }
 
-static void print_partition(const std::vector<int> &partition, int nr) {
-    logger()<<nr<<"th partition: ";
+static std::string part_to_string(const std::vector<int> &partition, int nr) {
+    std::string str;
+    str += std::to_string(nr);
+    str += "th partition: ";
     for(int x : partition) {
-        logger() << x << " ";
+        str += std::to_string(x);
+        str += ", ";
     }
-    logger() << std::endl;
+    str.pop_back();
+    str += "\n";
+    return str;
 }
 
 struct array_hash {
@@ -149,15 +155,25 @@ struct array_hash {
     }
 };
 
-DFA DFA::minimize() {
-    DFA dfa = treeshake();
-    logger() << "Temporary treeshaken DFA:" << std::endl;
-    dfa.print(logger());
+DFA DFA::minimize(DFA *save_shaken) {
+    if(save_shaken != nullptr) {
+        verbose() << "Caller wants treeshaken DFA, saving to given pointer" << std::endl;
+        *save_shaken = treeshake();
+    }
+    DFA local_shaken;
+    if(save_shaken == nullptr) {
+        verbose() << "Caller does not want treeshaken DFA, creating temporary one" << std::endl;
+        local_shaken = treeshake();
+        save_shaken = &local_shaken;
+    }
+    DFA &dfa = *save_shaken;
+    verbose() << "Temporary treeshaken DFA:" << std::endl;
+    dfa.print(verbose());
     logger() << "Minimizing..." << std::endl;
     std::vector<int> current_part(dfa.transitions.size()), next_part(dfa.transitions.size());
     for(int x = 0;x<current_part.size();x++)
         current_part[x] = dfa.final_states[x] ? 1 : 0;
-    print_partition(current_part, 0);
+    part_to_string(current_part, 0);
     int nr = 0, iterations = 0;
     std::unordered_map<std::array<int, ALPHABET.len + 1>, int, array_hash> assignment;
     int nextid = 0;
@@ -182,7 +198,7 @@ DFA DFA::minimize() {
         std::cout<<"Partition iterations: "<<iterations<<std::endl;
         bool split = std::any_of(directions.begin(), directions.end(), [](const auto &p) { return p.second > 1; });
         std::swap(current_part, next_part);
-        print_partition(current_part, ++nr);
+        part_to_string(current_part, ++nr);
         if (!split) break;
     }
     DFA result;
@@ -190,13 +206,10 @@ DFA DFA::minimize() {
     result.resize(*std::max_element(current_part.begin(), current_part.end()) + 1);
     result.setStartState(current_part[dfa.start_state]);
     logger() << "Setting start state to current_part[" << dfa.start_state << "] = " << current_part[dfa.start_state] << std::endl;
-//    logger() << "Start state: " << current_part[dfa.start_state] << " from state " << dfa.start_state << std::endl;
     for(int x = 0;x<current_part.size();x++) {
         for(int sym = 0;sym<ALPHABET.len;sym++) {
             if(dfa.transitions[x][sym] != NONE) {
                 result.overwriteTransition({current_part[x], int_to_sym(sym), current_part[dfa.transitions[x][sym]]});
-//                logger() << "Transition " << current_part[x] << " " << int_to_sym(sym) << " " << current_part[dfa.transitions[x][sym]] << std::endl;
-//                logger() << "From state " << x << " to state " << dfa.transitions[x][sym] << std::endl;
             }
         }
         if(dfa.final_states[x]) result.setFinalState(current_part[x], true);
@@ -207,20 +220,22 @@ DFA DFA::minimize() {
 void DFA::print(std::ostream &out) {
     out << "DFA:\n";
     for(int x = 0;x<transitions.size();x++) {
-        out << x << ": ";
+        std::string output;
+        output += std::to_string(x) + ": ";
         for(int sym = 0;sym<ALPHABET.len;sym++) {
             if(transitions[x][sym] != NONE) {
-                out << int_to_sym(sym) << "->" << transitions[x][sym] << " ";
+                output += std::to_string(int_to_sym(sym)) + "->" + std::to_string(transitions[x][sym]) + " ";
             } else {
-                out << int_to_sym(sym) << "->" << "X ";
+                output += std::to_string(int_to_sym(sym)) + "->X ";
             }
         }
-        out << "\n";
+        output += "\n";
+        out << output;
     }
     out << "Start state: " << start_state << "\n";
     out << "Final states: ";
     for(int x = 0;x<final_states.size();x++) {
-        if(final_states[x]) out << x << " ";
+        if(final_states[x]) out << std::to_string(x) + " ";
     }
     out << "\n";
 }

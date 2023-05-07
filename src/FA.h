@@ -6,10 +6,6 @@
 #include <iosfwd>
 #include "Acceptor.h"
 
-bool getDebugOutputEnabled();
-void setDebugOutputEnabled(bool);
-std::ostream &logger();
-
 constexpr struct {
     char start = 'a';
     char end = 'z';

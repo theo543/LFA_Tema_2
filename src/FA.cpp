@@ -2,23 +2,6 @@
 #include <iostream>
 #include "FA.h"
 
-static bool dbg_value = false;
-
-bool getDebugOutputEnabled() {
-    return dbg_value;
-}
-
-void setDebugOutputEnabled(bool value) {
-    dbg_value = value;
-}
-
-static std::ostream null_stream(nullptr);
-
-std::ostream &logger() {
-    if(dbg_value) return std::cout;
-    else return null_stream;
-}
-
 FA::FA() : start_state(0), final_states(1) {}
 
 void FA::assertInBounds(int state) const {

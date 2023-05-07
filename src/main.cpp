@@ -7,6 +7,7 @@
 #include <filesystem>
 #include "DFA.h"
 #include "NFA.h"
+#include "utils.h"
 #if LIBFSM
 #include "libfsmWrapper.h"
 #endif
@@ -25,7 +26,11 @@ int main() {
         int debug;
         std::cin >> debug;
         setDebugOutputEnabled(debug);
-        std::ios::sync_with_stdio(false);
+        if(debug) {
+            std::cout<<"Enable verbose debug output? (1/0): ";
+            std::cin >> debug;
+            setVerboseOutputEnabled(debug);
+        }
     }
     struct check {
         std::string name;
@@ -35,6 +40,7 @@ int main() {
     NFA nfa;
     DFA unminimized;
     std::string path;
+    std::cin.ignore(); // Ignore newline from debug input
     while(true) {
         std::cout << "Enter path to NFA file (empty for menu): ";
         getline(std::cin, path);
@@ -56,7 +62,7 @@ int main() {
                 } else std::cout << "Invalid choice." << std::endl;
             }
         }
-        if (!std::filesystem::exists(path)) {
+        if (!std::filesystem::exists(path) || std::filesystem::is_directory(path)) {
             std::cout << "File not found." << std::endl;
         } else break;
     }
@@ -65,29 +71,32 @@ int main() {
     unminimized = nfa.determinize();
     std::cout << "DFA created with " << unminimized.getSize() << " states" << std::endl;
     checks.emplace_back("Deserialized NFA", &nfa);
-    unminimized.print(logger());
-    DFA shaken = unminimized.treeshake(); // just to make sure this works even on its own
-    std::cout << "(Only) Shaken DFA has " << shaken.getSize() << " states" << std::endl;
-    DFA minimized = unminimized.minimize();
+    std::unique_ptr<DFA> shaken = std::make_unique<DFA>();
+    DFA minimized = unminimized.minimize(shaken.get());
     std::cout << "Minimized DFA created with " << minimized.getSize() << " states" << std::endl;
-    if(minimized.getSize() == shaken.getSize())
+    if(minimized.getSize() == shaken->getSize())
         std::cout << "Shaken DFA was already minimal (make sure RNG is adding lots of sink transitions to get non-minimal DFA)" << std::endl;
-    minimized.print(logger());
+    minimized.print(verbose());
 #if LIBFSM
+    std::cout << "Creating libfsmWrapper (external library)..." << std::endl;
     libfsmWrapper fsm(nfa);
-    std::cout << "libfsmWrapper created with " << fsm.getSize() << " states" << std::endl;
-    if(fsm.getSize() == minimized.getSize())
-        std::cout << "libfsm agrees that the minimized DFA is minimal" << std::endl;
-    else std::cout << "libfsm disagrees that the minimized DFA is minimal" << std::endl;
-    checks.emplace(checks.begin(), "libfsm (external library)", &fsm);
+    if(fsm.getSize() != 0) {
+        std::cout << "libfsmWrapper created with " << fsm.getSize() << " states" << std::endl;
+        if (fsm.getSize() == minimized.getSize())
+            std::cout << "libfsm agrees that the minimized DFA is minimal" << std::endl;
+        else std::cout << "libfsm disagrees that the minimized DFA is minimal" << std::endl;
+        checks.emplace_back("libfsm (external library)", &fsm);
+    } else {
+        std::cout << "libfsm's DFA is empty, not using for bug checking because libfsm doesn't like empty languages (causes EIN0VAL)" << std::endl;
+    }
 #endif //LIBFSM
     std::cout<< "Type \"exit\" to exit\n";
     std::cout << "Valid string example from final DFA:" << minimized.get_valid_string() << std::endl;
     std::cout<< "Valid string from unminimized DFA:" << unminimized.get_valid_string() << std::endl;
     std::string input;
     checks.emplace_back("Unminimized DFA", &unminimized);
+    checks.emplace_back("Shaken DFA", shaken.get());
     checks.emplace_back("Minimized DFA", &minimized);
-    checks.emplace_back("Shaken DFA", &shaken);
     while(true) {
         std::cout << "Input string (_ = lambda) (BF = search for bugs) : ";
         std::cin >> input;

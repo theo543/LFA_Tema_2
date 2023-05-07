@@ -15,7 +15,7 @@ public:
     void overwriteTransition(Transition t);
     void removeTransition(Transition t) override;
     DFA treeshake();
-    DFA minimize();
+    DFA minimize(DFA *save_shaken = nullptr);
     void print(std::ostream &out);
     std::string get_valid_string();
 };
