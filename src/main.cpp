@@ -8,7 +8,7 @@
 #include "DFA.h"
 #include "NFA.h"
 bool bruteforce_strings(const std::string &prev, int size, int maxsize, const std::function<bool(const std::string &)> &callback) {
-    if(size > maxsize) {
+    if(size >= maxsize) {
         return callback(prev);
     }
     for(char c = ALPHABET.start;c<=ALPHABET.end;c++) {
