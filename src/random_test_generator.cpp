@@ -16,7 +16,7 @@ int main() {
     std::cin >> sink_states;
     std::cout << "Enter nr. of random transitions: ";
     std::cin >> total_transitions;
-    std::cout << "Enter perceptange of transitions redirected to sink state: ";
+    std::cout << "Enter percentage of transitions redirected to sink state: ";
     std::cin >> sink_chance;
     NFA nfa;
     nfa.resize(total_states + sink_states);
