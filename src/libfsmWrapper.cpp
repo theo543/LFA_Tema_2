@@ -15,10 +15,14 @@ static void throw_if_error(int result, int error) {
 }
 
 bool libfsmWrapper::tryAccept(const std::string &word) {
+    if(!vm_ptr) {
+        std::cout << "Compiling libfsm DFA for quick matching\n";
+        vm_ptr = fsm_vm_compile(fsm_ptr);
+    }
     return fsm_vm_match_buffer(vm_ptr, word.c_str(), word.size());
 }
 
-libfsmWrapper::libfsmWrapper(const NFA &nfa) {
+libfsmWrapper::libfsmWrapper(const NFA &nfa) : vm_ptr(nullptr) {
     std::cout << "Creating libfsm DFA from our NFA\n";
     fsm_ptr = fsm_new(nullptr);
     fsm_addstate_bulk(fsm_ptr, nfa.getSize());
@@ -37,8 +41,6 @@ libfsmWrapper::libfsmWrapper(const NFA &nfa) {
     std::cout << "Minimising libfsm DFA\n";
     throw_if_error(fsm_minimise(fsm_ptr), 0);
     logger() << "Minimized libfsm DFA has " << fsm_countstates(fsm_ptr) << " states\n";
-    std::cout << "Compiling libfsm DFA for quick matching\n";
-    vm_ptr = fsm_vm_compile(fsm_ptr);
 }
 
 unsigned int libfsmWrapper::getSize() const {
@@ -47,6 +49,7 @@ unsigned int libfsmWrapper::getSize() const {
 
 libfsmWrapper::~libfsmWrapper() {
     fsm_free(fsm_ptr);
-    fsm_vm_free(vm_ptr);
+    if(vm_ptr)
+        fsm_vm_free(vm_ptr);
 }
 #endif //LIBFSM
