@@ -13,13 +13,13 @@ constexpr auto EMPTY_STATE_MARKER = "_";
 
 NFA::NFA() : FA() {}
 
-void NFA::resize(int size) {
-    if(size <= 0) throw std::invalid_argument("Need at least one state");
+void NFA::resize(std::size_t size) {
+    size = (size == 0) ? 1 : size;
     if(size > transitions.size()) {
-        int old_size = transitions.size();
+        std::size_t old_size = transitions.size();
         final_states.resize(size);
         transitions.resize(size);
-        for(int x = old_size;x<transitions.size();x++) {
+        for(std::size_t x = old_size;x<transitions.size();x++) {
             final_states[x] = false;
         }
     }
@@ -164,9 +164,11 @@ NFA NFA::deserialize(std::istream &in) {
         char start, end;
         int len;
         in >> start >> end >> len;
-        assert(ALPHABET.start == start && ALPHABET.end == end && ALPHABET.len == len);
+        if(!(ALPHABET.start == start && ALPHABET.end == end && ALPHABET.len == len)) {
+            throw std::invalid_argument("Alphabet mismatch");
+        }
     }
-    int size;
+    std::size_t size;
     in >> size;
     nfa.resize(size);
     for(int i = 0; i < size; i++) {
@@ -178,21 +180,26 @@ NFA NFA::deserialize(std::istream &in) {
         }
         verbose() << "Adding state " + std::to_string(i) + " with chars " + chars + "\n";
         for(char symchar : chars) {
+            nfa.assertInBounds(symchar);
             int sym = sym_to_int(symchar);
             char c;
             in >> c;
-            assert(c == symchar);
+            if(c != symchar) {
+                throw std::invalid_argument("Incorrect or out-of-order symbol");
+            }
             int count;
             in >> count;
-            for(int j = 0; j < count; j++) {
+            for(int j = 0; in && j < count; j++) {
                 int to;
                 in >> to;
                 nfa.addTransition(Transition{i, int_to_sym(sym), to});
             }
-            assert(count == nfa.transitions[i][sym].size());
+            if(count != nfa.transitions[i][sym].size()) {
+                throw std::invalid_argument("Count is incorrect");
+            }
         }
     }
-    for(int i = 0; i < size; i++) {
+    for(int i = 0; in && i < size; i++) {
         bool final;
         in >> final;
         nfa.setFinalState(i, final);

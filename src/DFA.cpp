@@ -45,13 +45,12 @@ bool DFA::tryAccept(const std::string &s) {
     return final_states[current_state];
 }
 
-void DFA::resize(int size) {
-    if(size <= 0) throw std::invalid_argument("Need at least one state");
+void DFA::resize(std::size_t size) {
     if(size > transitions.size()) {
-        int prev_size = transitions.size();
+        std::size_t prev_size = transitions.size();
         final_states.resize(size);
         transitions.resize(size);
-        for(int x = prev_size;x<transitions.size();x++) {
+        for(std::size_t x = prev_size;x<transitions.size();x++) {
             final_states[x] = false;
             transitions[x] = ALL_NONE;
         }
@@ -149,7 +148,7 @@ struct array_hash {
         auto hasher = std::hash<T>();
         std::size_t h = 0;
         for (auto &x : arr) {
-            h ^= hasher(x) + (h << 2) + 7919;
+            h ^= hasher(x) + (h << 2) + 7919 + std::distance(&arr[0], &x) * h;
         }
         return h;
     }
@@ -245,9 +244,10 @@ std::string DFA::get_valid_string() {
         char sym = 0;
         int state = 0;
         int prev = 0;
+        node(char sym, int state, int prev) : sym(sym), state(state), prev(prev) {}
     };
     std::vector<node> bfs;
-    bfs.emplace_back(0, start_state);
+    bfs.emplace_back(0, start_state, 0);
     std::string ret;
     std::vector<bool> visited(final_states.size(), false);
     for(int x = 0;x < bfs.size();x++) {

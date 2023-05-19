@@ -12,7 +12,7 @@ class NFA : public FA {
 public:
     NFA();
 
-    void resize(int size) override;
+    void resize(std::size_t size) override;
     bool tryAccept(const std::string &s) override;
     void addTransition(Transition t) override;
     void removeTransition(Transition t) override;

@@ -1,10 +1,10 @@
-#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <functional>
+#include <utility>
 #include <vector>
 #include <filesystem>
+#include <memory>
 #include "DFA.h"
 #include "NFA.h"
 #include "utils.h"
@@ -21,53 +21,23 @@ bool bruteforce_strings(const std::string &prev, int size, int maxsize, const st
     }
     return false;
 }
-int main() {
-    color("blue", "Enable debug output? (1/0): ", true);
-    {
-        int debug;
-        std::cin >> debug;
-        setDebugOutputEnabled(debug);
-        if(debug) {
-            color("blue", "Enable verbose debug output? (1/0): ", true);
-            std::cin >> debug;
-            setVerboseOutputEnabled(debug);
-        }
-    }
+int main(int argc, char** argv) {
+    Config config = (argc >= 2) ? Config(argc, argv) : Config(std::cin);
+    config.applyOutputConf();
     struct check {
         std::string name;
         Acceptor *fa;
+        check(std::string name, Acceptor *fa) : name(std::move(name)), fa(fa) {}
     };
     std::vector<check> checks;
     NFA nfa;
     DFA unminimized;
-    std::string path;
-    std::cin.ignore(); // Ignore newline from debug input
-    while(true) {
-        color("blue", "Enter path to NFA file (empty for menu): ", true);
-        getline(std::cin, path);
-        if(path.empty()) {
-            const std::filesystem::path def_f = std::filesystem::current_path() / "tests";
-            std::vector<std::filesystem::path> files;
-            files.insert(files.end(), std::filesystem::directory_iterator(def_f), std::filesystem::directory_iterator());
-            std::sort(files.begin(), files.end());
-            for(int nr = 0;nr<files.size();nr++) {
-                std::cout << nr << " - " << files[nr].filename() << std::endl;
-            }
-            int choice;
-            while(true) {
-                color("blue", "Enter choice: ", true);
-                std::cin >> choice;
-                if(choice >= 0 && choice < files.size()) {
-                    path = files[choice].string();
-                    break;
-                } else color("red", "Invalid choice.", true);
-            }
-        }
-        if (!std::filesystem::exists(path) || std::filesystem::is_directory(path)) {
-            color("red", "File not found.", true);
-        } else break;
+    try {
+        nfa = NFA::deserialize(config.path);
+    } catch(std::invalid_argument &e) {
+        color("red", "Invalid NFA file: " + std::string(e.what()), true);
+        return 1;
     }
-    nfa = NFA::deserialize(path);
     color("blue", "NFA created with " + std::to_string(nfa.getSize()) + " states", true);
     unminimized = nfa.determinize();
     color("blue", "DFA created with " + std::to_string(unminimized.getSize()) + " states", true);
@@ -92,47 +62,46 @@ int main() {
         color("yellow", "libfsm's DFA is empty, not using for bug checking because libfsm doesn't like empty languages (causes EINVAL)", true);
     }
 #endif //LIBFSM
-    std::cout<< "Type \"exit\" to exit\n";
-    std::cout << "Valid string example from final DFA:" << minimized.get_valid_string() << std::endl;
-    std::cout<< "Valid string from unminimized DFA:" << unminimized.get_valid_string() << std::endl;
-    std::string input;
     checks.emplace_back("Unminimized DFA", &unminimized);
     checks.emplace_back("Shaken DFA", shaken.get());
     checks.emplace_back("Minimized DFA", &minimized);
-    while(true) {
-        color("blue", "Input string (_ = lambda) (BF = search for bugs) : ", true);
+    std::cout<< "Type \"exit\" to exit\n";
+    std::cout << "Valid string example from final DFA:" << minimized.get_valid_string() << std::endl;
+    std::cout<< "Valid string from unminimized DFA:" << unminimized.get_valid_string() << std::endl;
+    if(config.BF) {
+        long long bf_counter = 0, yes_counter = 0, max_finds = config.BF_count;
+        std::function<bool(const std::string&)> check_equal = [&checks, &bf_counter, &yes_counter, &max_finds](const std::string &s) -> bool {
+            bool result = checks[0].fa->tryAccept(s);
+            for (auto &check_pair : checks) {
+                auto *check = check_pair.fa;
+                if (check->tryAccept(s) != result) {
+                    color("red", "Bug found!", true);
+                    std::cout << "Cause string: " << s << "\n";
+                    max_finds--;
+                    std::cout << "Searches left: " << max_finds << "\n";
+                    if(max_finds <= 0) return true;
+                }
+            }
+            bf_counter++;
+            if(result) yes_counter++;
+            if(bf_counter % 10000000 == 0) std::cout << "Checked " << bf_counter << " strings, " << yes_counter << " of which were accepted" << std::endl;
+            return false;
+        };
+        for(int length = 1; length <= config.BF_len; length++) {
+            std::cout << "Checking strings of length " << length << std::endl;
+            if (bruteforce_strings("", 0, length, check_equal))
+                break;
+        }
+    } else while(true) {
+        std::string input;
+        color("blue", "Input string (_ = lambda, exit = exit): ", true);
         std::cin >> input;
         if (input == "exit") break;
         if (input == "_") input = "";
-        if (input == "BF") {
-            long long bfcounter = 0, yescounter = 0, maxfinds;
-            std::function<bool(const std::string&)> checkequal = [&checks, &bfcounter, &yescounter, &maxfinds](const std::string &s) -> bool {
-                bool result = checks[0].fa->tryAccept(s);
-                for (auto &check_pair : checks) {
-                    auto *check = check_pair.fa;
-                    if (check->tryAccept(s) != result) {
-                        color("red", "Bug found!", true);
-                        std::cout << "Cause string: " << s << "\n";
-                        maxfinds--;
-                        std::cout<<"Searches left: " << maxfinds << "\n";
-                        if(maxfinds <= 0) return true;
-                    }
-                }
-                bfcounter++;
-                if(result) yescounter++;
-                if(bfcounter % 10000000 == 0) std::cout << "Checked " << bfcounter << " strings, " << yescounter << " of which were accepted" << std::endl;
-                return false;
-            };
-            color("blue", "Enter max string length: ", true);
-            int maxsize;
-            std::cin >> maxsize;
-            color("blue", "Cancel after how many finds: ", true);
-            std::cin >> maxfinds;
-            for(int length = 1; length <= maxsize; length++) {
-                std::cout << "Checking strings of length " << length << std::endl;
-                if (bruteforce_strings("", 0, length, checkequal))
-                    break;
-            }
+        bool bad = false;
+        for(char c : input) bad |= !(ALPHABET.start <= c && c <= ALPHABET.end);
+        if(bad) {
+            color("red", "Invalid input string", true);
             continue;
         }
         bool result = checks[0].fa->tryAccept(input);

@@ -13,9 +13,9 @@ class libfsmWrapper : public Acceptor {
     fsm_dfavm *vm_ptr;
 public:
     bool tryAccept(const std::string &word) override;
-    libfsmWrapper(const NFA &nfa);
-    unsigned int getSize() const;
-    virtual ~libfsmWrapper();
+    explicit libfsmWrapper(const NFA &nfa);
+    [[nodiscard]] unsigned int getSize() const;
+    ~libfsmWrapper() override;
 };
 
 

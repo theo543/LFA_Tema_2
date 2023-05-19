@@ -42,12 +42,11 @@ protected:
 public:
     void setStartState(int state);
     void setFinalState(int state, bool is_final);
-    int getSize() const;
-    int getStartState() const;
-    virtual void resize(int size) = 0;
+    [[nodiscard]] int getSize() const;
+    [[nodiscard]] int getStartState() const;
+    virtual void resize(std::size_t size) = 0;
     virtual void addTransition(Transition t) = 0;
     virtual void removeTransition(Transition t) = 0;
-    virtual ~FA() = default;
 };
 
 

@@ -10,7 +10,7 @@ public:
     DFA();
     bool tryAccept(const std::string &s) override;
 
-    void resize(int size) override;
+    void resize(std::size_t size) override;
     void addTransition(Transition t) override;
     void overwriteTransition(Transition t);
     void removeTransition(Transition t) override;
